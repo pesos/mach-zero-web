@@ -1,6 +1,6 @@
 # mach-one-web
 
-The event portal for **Mach Zero** (PES University, 31 Oct – 1 Nov 2026). It is
+The event portal for **MachZero** (Silicon X PESOS, PES University Ring Road Campus, 7–8 Nov 2026). It is
 the eventKit template portal (`eventkit-web/portal`) with the Mach Zero poster's
 theme: a cream sky, lavender haze, chrome lettering and moon-base illustrations. All
 data comes from the event through `@eventkit/sdk`, so the event name, dates,
@@ -24,7 +24,10 @@ first (`npm run build`).
   pictures in `public/backgrounds/` (home: `base`, signed-in pages: `outpost`,
   everything else: `plan`). Each has a focus point so phones crop to the
   astronaut.
-- Home page hero: `src/pages/Home.tsx`.
+- Home page: `src/pages/Home.tsx`. The description, highlights, schedule and
+  "good to know" notes are in `src/content/event.ts`; everything else (name,
+  dates, venue, team size, registration window) comes from the event in the
+  console.
 - Icons: `public/favicon.svg`; the PNGs are rendered from it
   (`rsvg-convert -w 512 -h 512 public/favicon.svg -o public/pwa-512.png`).
 

@@ -18,8 +18,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'Mach Zero',
-        short_name: 'Mach Zero',
+        name: 'MachZero',
+        short_name: 'MachZero',
         theme_color: '#f7efe4',
         background_color: '#f7efe4',
         display: 'standalone',

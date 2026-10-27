@@ -20,6 +20,22 @@ describe('the event home page', () => {
     );
   });
 
+  it('shows the event days, the about text, highlights and the two-day schedule', async () => {
+    renderPortal('/');
+    expect(await screen.findByText(/Sat, 31 Oct & Sun, 1 Nov/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument();
+    expect(screen.getByText(/two-day open-source contribution spree/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'At a glance' })).getAllByRole('listitem'),
+    ).toHaveLength(4);
+    const day1 = screen.getByRole('region', { name: 'Day 1' });
+    expect(within(day1).getByText('Round 1')).toBeInTheDocument();
+    expect(within(day1).getByRole('heading', { name: 'Day 1 · Sat, 31 Oct' })).toBeInTheDocument();
+    const day2 = screen.getByRole('region', { name: 'Day 2' });
+    expect(within(day2).getByText('Winners announced, event close')).toBeInTheDocument();
+    expect(screen.getByText(/At least two CSE students per team/)).toBeInTheDocument();
+  });
+
   it('says when registration runs if it is closed, and leaves out a missing fee', async () => {
     server.use(
       http.get(P, () =>
