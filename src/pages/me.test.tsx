@@ -306,6 +306,24 @@ describe('the team leader’s page', () => {
     expect(screen.queryByLabelText(/receipt/)).not.toBeInTheDocument();
   });
 
+  it('shows how to pay above the receipt upload', async () => {
+    server.use(
+      http.get(P, () =>
+        HttpResponse.json(
+          portalInfo({
+            event: { ...portalEvent, paymentInstructions: 'UPI: club@upi' },
+            paymentInstructionsUrl: 'https://bucket.test/events/e/payment-instructions/i.png?sig=1',
+          }),
+        ),
+      ),
+    );
+    renderPortal('/me', { session: asParticipant(leader) });
+    const how = await screen.findByLabelText('How to pay');
+    expect(within(how).getByText('UPI: club@upi')).toBeInTheDocument();
+    expect(within(how).getByRole('img', { name: 'Payment instructions' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Upload the payment receipt')).toBeInTheDocument();
+  });
+
   it('shows a refused receipt upload', async () => {
     const session = asParticipant(leader);
     server.use(

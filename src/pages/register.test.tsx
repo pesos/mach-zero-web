@@ -91,6 +91,45 @@ async function fillMember(i: number, name: string, dept = 'CSE') {
 }
 
 describe('registering a team', () => {
+  it('charges a per-team fee once and shows how to pay', async () => {
+    server.use(
+      regLink,
+      http.get(P, () =>
+        HttpResponse.json(
+          portalInfo({
+            event: {
+              ...portalEvent,
+              feeBasis: 'per_team',
+              registrationFee: 120000,
+              paymentInstructions: 'Bank: Canara, A/c 1234\nor UPI: club@upi',
+            },
+            paymentInstructionsUrl: 'https://bucket.test/events/e/payment-instructions/i.pdf?sig=1',
+          }),
+        ),
+      ),
+    );
+    renderPortal('/register/reg-token');
+    expect(
+      await screen.findByRole('heading', { name: 'Pay ₹1,200 for the team' }),
+    ).toBeInTheDocument();
+    const how = screen.getByLabelText('How to pay');
+    expect(within(how).getByText(/or UPI: club@upi/)).toBeInTheDocument();
+    expect(
+      within(how).getByRole('link', { name: 'Open the payment instructions (PDF)' }),
+    ).toHaveAttribute('href', 'https://bucket.test/events/e/payment-instructions/i.pdf?sig=1');
+    expect(within(how).queryByRole('img')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Add a member' }));
+    expect(screen.getByRole('heading', { name: 'Pay ₹1,200 for the team' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Payment receipt')).toBeInTheDocument();
+  });
+
+  it('says when the organisers have not explained how to pay', async () => {
+    server.use(regLink);
+    renderPortal('/register/reg-token');
+    expect(await screen.findByText(/haven't said how to pay yet/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Payment receipt')).toBeInTheDocument();
+  });
+
   it('registers the whole team with a receipt and shows each member once', async () => {
     let body: Record<string, unknown> | undefined;
     server.use(

@@ -21,6 +21,7 @@ import { CopyButton } from '@/components/CopyButton';
 import { ErrorText } from '@/components/ErrorText';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert } from '@/components/ui/alert';
+import { PaymentInstructions } from '@/components/PaymentInstructions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -237,6 +238,7 @@ function LeaderTeam() {
             </ul>
             {canPay && (
               <>
+                <PaymentInstructions />
                 <Label htmlFor="pay-receipt">
                   {latest === 'rejected' ? 'Upload a new receipt' : 'Upload the payment receipt'}
                 </Label>

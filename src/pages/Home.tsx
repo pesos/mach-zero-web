@@ -1,4 +1,4 @@
-import { formatIST, formatMoney } from '@eventkit/sdk';
+import { describeFee, formatIST } from '@eventkit/sdk';
 import { usePortalInfo } from '@eventkit/sdk/react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -36,8 +36,7 @@ export function Home() {
           <PosterRow icon={<PinIcon />}>{event.venue}</PosterRow>
           <PosterRow icon={<PeopleIcon />}>
             Teams of {event.minTeamSize}–{event.maxTeamSize}
-            {event.registrationFee !== null &&
-              ` · ${formatMoney(event.registrationFee, event.currency)} per person`}
+            {describeFee(event) && ` · ${describeFee(event)}`}
             {' · '}
             {event.placesLeft} places left
           </PosterRow>

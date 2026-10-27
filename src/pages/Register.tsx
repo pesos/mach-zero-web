@@ -1,4 +1,5 @@
 import {
+  amountDue,
   checkRegistration,
   type Draft,
   formatIST,
@@ -16,6 +17,7 @@ import { CopyButton } from '@/components/CopyButton';
 import { ErrorText } from '@/components/ErrorText';
 import { FieldInputs } from '@/components/FieldInputs';
 import { Alert } from '@/components/ui/alert';
+import { PaymentInstructions } from '@/components/PaymentInstructions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -72,7 +74,7 @@ function TeamForm(props: {
     input: Omit<Parameters<ReturnType<typeof useEventKit>['portal']['register']>[0], 'linkToken'>,
   ) => void;
 }) {
-  const { event, fields, teamRules, paymentQrUrl } = usePortalInfo().data!;
+  const { event, fields, teamRules } = usePortalInfo().data!;
   const [name, setName] = useState('');
   const [teamAnswers, setTeamAnswers] = useState<Draft>({});
   const [members, setMembers] = useState<Member[]>(() =>
@@ -185,20 +187,15 @@ function TeamForm(props: {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Pay {formatMoney(event.registrationFee! * members.length, event.currency)}
+              Pay {formatMoney(amountDue(event, members.length), event.currency)}
+              {event.feeBasis === 'per_team' ? ' for the team' : ''}
             </CardTitle>
             <CardDescription>
-              Pay by UPI to this QR code, then upload the receipt (a screenshot or PDF).
+              Pay as shown below, then upload the receipt (a screenshot or PDF).
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            {paymentQrUrl && (
-              <img
-                src={paymentQrUrl}
-                alt="UPI QR code to pay"
-                className="h-48 w-48 rounded border object-contain"
-              />
-            )}
+            <PaymentInstructions />
             <Label htmlFor="receipt">Payment receipt</Label>
             <input
               id="receipt"

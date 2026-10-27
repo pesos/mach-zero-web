@@ -29,8 +29,10 @@ export const portalEvent: Schemas['PortalInfo']['event'] = {
   placesLeft: 42,
   paymentMode: 'at_registration',
   registrationFee: 20000,
+  feeBasis: 'per_person',
   currency: 'INR',
   paymentDeadline: null,
+  paymentInstructions: null,
   leaderboardVisible: false,
 };
 
@@ -42,6 +44,7 @@ export function portalInfo(overrides: Partial<Schemas['PortalInfo']> = {}): Sche
     fields: [],
     teamRules: [],
     paymentQrUrl: null,
+    paymentInstructionsUrl: null,
     ...overrides,
   };
 }
