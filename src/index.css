@@ -1,8 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* Dark mode is a .dark class on <html> (src/lib/theme.ts): it follows the phone's colour
-   scheme until someone picks a theme in the header. */
+/* The portal is always dark: index.html puts the .dark class on <html>. */
 @custom-variant dark (&:is(.dark *));
 
 /* Mach Zero: a cream sky, lavender haze and chrome type (from the event poster),

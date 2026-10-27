@@ -1,7 +1,10 @@
 // What the portal says about MachZero beyond the event's own fields (name,
 // dates, venue, team size and registration window come from the API).
 
-export const tagline = 'A hackathon where the output ships upstream.';
+export const tagline = 'A 2 day contribution spree.';
+
+/** Where teams register (the event's registration link). */
+export const registerUrl = 'https://machzero.vercel.app/register/nAcI0_L5zKXkS0odwznrvnv7s5e8gSLy';
 
 export const about = [
   'MachZero is a two-day open-source contribution spree where multidisciplinary student teams work on live, community-maintained hardware and software repositories under the guidance of industry mentors.',
@@ -22,10 +25,6 @@ export const goodToKnow: { title: string; body: string }[] = [
   {
     title: 'Team composition',
     body: 'At least two CSE students per team. Students from ECE and other branches are encouraged to join.',
-  },
-  {
-    title: 'Class attendance',
-    body: 'Attendance compensation is confirmed for everyone who attends the event.',
   },
 ];
 

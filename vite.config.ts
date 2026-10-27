@@ -20,7 +20,7 @@ export default defineConfig({
       manifest: {
         name: 'MachZero',
         short_name: 'MachZero',
-        theme_color: '#f7efe4',
+        theme_color: '#1a1b2f',
         background_color: '#f7efe4',
         display: 'standalone',
         start_url: '/',

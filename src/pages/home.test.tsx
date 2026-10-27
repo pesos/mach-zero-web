@@ -12,7 +12,18 @@ describe('the event home page', () => {
     expect(await screen.findByRole('heading', { name: 'PESOS X Silicon' })).toBeInTheDocument();
     expect(screen.getByText(/Teams of 2–3 · ₹200 per person · 42 places left/)).toBeInTheDocument();
     expect(screen.getByText(/Registration is open until/)).toBeInTheDocument();
-    expect(screen.getByText(/Registered already\? Open the personal link/)).toBeInTheDocument();
+    expect(screen.queryByText(/Registered already/)).not.toBeInTheDocument();
+    expect(screen.getByText('Registrations open')).toBeInTheDocument();
+    for (const link of screen.getAllByRole('link', { name: /Register your team/ })) {
+      expect(link).toHaveAttribute(
+        'href',
+        expect.stringContaining('machzero.vercel.app/register/'),
+      );
+    }
+    expect(screen.getByRole('list', { name: 'Time left to register' })).toHaveTextContent(
+      /\d\dd \d\dh/,
+    );
+    expect(screen.queryByText(/Attendance compensation/)).not.toBeInTheDocument();
     // Staff sign in is not offered to visitors: organisers share its address.
     expect(screen.queryByRole('navigation', { name: 'Portal' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /sign in/i })).not.toBeInTheDocument();
@@ -44,6 +55,9 @@ describe('the event home page', () => {
     );
     renderPortal('/');
     expect(await screen.findByText(/Registration is not open\. It runs/)).toBeInTheDocument();
+    expect(screen.getByText('Registrations closed')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Register your team/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Time left to register' })).not.toBeInTheDocument();
     expect(screen.queryByText(/per person/)).not.toBeInTheDocument();
   });
 

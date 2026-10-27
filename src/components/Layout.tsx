@@ -6,9 +6,7 @@ import {
   LogOutIcon,
   type LucideIcon,
   MenuIcon,
-  MoonIcon,
   ScanLineIcon,
-  SunIcon,
   UserRoundIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -19,7 +17,6 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { basePath } from '@/lib/paths';
 import { forgetSession, useWho } from '@/lib/staff';
-import { setTheme, useTheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 type Section = { to: string; label: string; icon: LucideIcon };
@@ -32,7 +29,6 @@ export function Layout() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  const theme = useTheme();
   const sections: Section[] = [];
   if (who.kind === 'participant')
     sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
@@ -89,14 +85,14 @@ export function Layout() {
             {info.event.name}
           </Link>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={theme === 'dark' ? 'Use light theme' : 'Use dark theme'}
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </Button>
+            {/* The organisers. */}
+            <div className="flex items-center gap-1.5">
+              <img src="/pesos.png" alt="PESOS" className="size-10 object-contain" />
+              <span aria-hidden className="text-xs text-muted-foreground">
+                ×
+              </span>
+              <img src="/silicon.png" alt="Silicon" className="size-10 object-contain" />
+            </div>
             {who.kind ? (
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
@@ -128,7 +124,7 @@ export function Layout() {
         {/* Signed in: the sections in a sidebar from md up (a sheet on phones). */}
         {who.kind && (
           <aside className="hidden md:block">
-            <div className="sticky top-20 rounded-xl border bg-card/85 p-2 shadow-sm backdrop-blur-md">
+            <div className="sticky top-20 rounded-xl border bg-card/85 p-2 backdrop-blur-md">
               {menu}
             </div>
           </aside>

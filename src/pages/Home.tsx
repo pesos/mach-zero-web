@@ -4,11 +4,12 @@ import {
   ArrowRightIcon,
   CalendarDaysIcon,
   ClockIcon,
+  ExternalLinkIcon,
   type LucideIcon,
   MapPinIcon,
   UsersIcon,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import {
   dailyHours,
   goodToKnow,
   highlights,
+  registerUrl,
   schedule,
   type Slot,
   tagline,
@@ -37,12 +39,29 @@ export function Home() {
     <>
       <section className="grid justify-items-center gap-5 py-4 text-center sm:py-8">
         <Badge variant="outline" className="bg-card/70 font-display tracking-[0.2em] uppercase">
-          by {event.hostedBy}
+          {/* "PESOS X Silicon" reads as PESOS x SILICON PRESENTS: capitals, a small x between. */}
+          <span>
+            {event.hostedBy.split(/\s+x\s+/i).map((host, i) => (
+              <Fragment key={host}>
+                {i > 0 && <span className="normal-case"> x </span>}
+                {host}
+              </Fragment>
+            ))}{' '}
+            presents
+          </span>
         </Badge>
-        <h2 className="chrome-text text-5xl leading-[1.05] break-words sm:text-7xl">
-          {event.name}
+        <h2>
+          <img
+            src="/wordmark.webp"
+            alt={event.name}
+            width={2000}
+            height={499}
+            className="h-auto w-full max-w-xl drop-shadow-lg"
+          />
         </h2>
         <p className="max-w-md text-lg text-balance text-foreground/80">{tagline}</p>
+        <RegistrationBadge open={registrationOpen} deadline={event.registrationDeadline} />
+        {registrationOpen && <RegisterButton />}
       </section>
 
       <ul className="grid gap-3 sm:grid-cols-2">
@@ -66,29 +85,13 @@ export function Home() {
       <Card className={cn(registrationOpen && 'border-primary/30')}>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid gap-2">
-            <Badge
-              variant={registrationOpen ? 'default' : 'secondary'}
-              className="gap-1.5 font-sans"
-            >
-              <span
-                className={cn(
-                  'size-1.5 rounded-full',
-                  registrationOpen ? 'animate-pulse bg-primary-foreground' : 'bg-muted-foreground',
-                )}
-              />
-              {registrationOpen ? 'Registration open' : 'Registration closed'}
-            </Badge>
             <p className="text-sm leading-relaxed">
               {registrationOpen
-                ? `Registration is open until ${formatIST(event.registrationDeadline)}. Your team leader registers everyone through the registration link from the organisers.`
+                ? `Registration is open until ${formatIST(event.registrationDeadline)}. Your team leader registers everyone at once.`
                 : `Registration is not open. It runs ${formatIST(event.registrationStart)} – ${formatIST(event.registrationDeadline)}.`}
             </p>
-            {!who.kind && (
-              <p className="text-sm text-muted-foreground">
-                Registered already? Open the personal link you were given.
-              </p>
-            )}
           </div>
+          {registrationOpen && !who.kind && <RegisterButton />}
           {who.kind === 'participant' && (
             <Button asChild size="lg" className="shrink-0">
               <Link to={basePath(paths.me)}>
@@ -113,7 +116,7 @@ export function Home() {
 
       <ul aria-label="At a glance" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {highlights.map((h) => (
-          <li key={h.label} className="rounded-xl border bg-card/85 p-4 shadow-sm backdrop-blur-md">
+          <li key={h.label} className="rounded-xl border bg-card/85 p-4 backdrop-blur-md">
             <p className="font-display text-xl text-primary">{h.value}</p>
             <p className="mt-1 text-xs leading-snug text-muted-foreground">{h.label}</p>
           </li>
@@ -148,9 +151,9 @@ export function Home() {
 
       <Card>
         <CardHeader>
-          <CardTitle className={sectionTitle}>Good to know</CardTitle>
+          <CardTitle className={sectionTitle}>Instructions</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+        <CardContent className="grid gap-3 text-sm">
           {goodToKnow.map((g) => (
             <div key={g.title} className="rounded-lg bg-muted/60 p-4">
               <p className="font-medium">{g.title}</p>
@@ -160,6 +163,70 @@ export function Home() {
         </CardContent>
       </Card>
     </>
+  );
+}
+
+function RegistrationBadge({ open, deadline }: { open: boolean; deadline: string }) {
+  return (
+    <Badge
+      variant={open ? 'default' : 'secondary'}
+      className="flex-wrap gap-x-2 gap-y-0.5 rounded-2xl px-3 py-1 font-sans text-sm whitespace-normal sm:rounded-full"
+    >
+      <span
+        className={cn(
+          'size-2 rounded-full',
+          open ? 'animate-pulse bg-primary-foreground' : 'bg-muted-foreground',
+        )}
+      />
+      {open ? 'Registrations open' : 'Registrations closed'}
+      {open && <DeadlineCountdown deadline={deadline} />}
+    </Badge>
+  );
+}
+
+function RegisterButton() {
+  return (
+    <Button asChild size="lg" className="shrink-0">
+      <a href={registerUrl} target="_blank" rel="noreferrer">
+        Register your team
+        <ExternalLinkIcon />
+      </a>
+    </Button>
+  );
+}
+
+/** Each unit's length and the next unit up's length it wraps within. */
+const UNITS = [
+  ['d', 86_400_000, Infinity],
+  ['h', 3_600_000, 86_400_000],
+  ['m', 60_000, 3_600_000],
+  ['s', 1_000, 60_000],
+] as const;
+
+/** Time left until registration closes, ticking every second; gone once it passes. */
+function DeadlineCountdown({ deadline }: { deadline: string }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const left = Date.parse(deadline) - now;
+  if (left <= 0) return null;
+  return (
+    <span
+      className="flex items-center gap-1.5 border-primary-foreground/30 font-normal sm:border-l sm:pl-2"
+      title={`Registration closes ${formatIST(deadline)}`}
+    >
+      closes in
+      <span role="list" aria-label="Time left to register" className="flex gap-1 tabular-nums">
+        {UNITS.map(([unit, ms, wrap]) => (
+          <span role="listitem" key={unit} className="font-semibold">
+            {String(Math.floor((left % wrap) / ms)).padStart(2, '0')}
+            {unit}{' '}
+          </span>
+        ))}
+      </span>
+    </span>
   );
 }
 
@@ -208,7 +275,7 @@ function Fact({
   children: ReactNode;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-xl border bg-card/85 p-3 shadow-sm backdrop-blur-md">
+    <li className="flex items-center gap-3 rounded-xl border bg-card/85 p-3 backdrop-blur-md">
       <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
         <Icon className="size-5" />
       </span>
