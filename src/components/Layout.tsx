@@ -37,8 +37,8 @@ export function Layout() {
   };
 
   return (
-    <div className="relative isolate min-h-svh pb-[30svh]">
-      <Backdrop />
+    <div className="relative isolate min-h-svh pb-[40svh]">
+      <Backdrop scene={pathname === '/' ? 'base' : who.kind ? 'outpost' : 'plan'} />
       <header className="sticky top-0 z-10 border-b border-border/60 bg-background/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
           <NavLink

@@ -20,8 +20,8 @@ export default defineConfig({
       manifest: {
         name: 'Mach Zero',
         short_name: 'Mach Zero',
-        theme_color: '#f5efe6',
-        background_color: '#f5efe6',
+        theme_color: '#f7efe4',
+        background_color: '#f7efe4',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -30,7 +30,7 @@ export default defineConfig({
           { src: '/pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
+      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'] },
       devOptions: { enabled: false },
     }),
   ],
