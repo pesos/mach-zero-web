@@ -39,8 +39,9 @@ replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
 - The scene behind every page: `src/components/Backdrop.tsx`, using the
   pictures in `public/backgrounds/` (home: `base`, signed-in pages: `outpost`,
   everything else: `plan`). Each has a focus point so phones crop to the
-  astronaut. At night every page uses `night-base`, except signed-in pages on
-  portrait phones, which get `night-outpost-tall`.
+  astronaut. At night the home and plan pages use `night-base` and
+  `night-plan`; signed-in pages use `night-base` too, except on portrait
+  phones, which get `night-outpost-tall`.
 - Staff sign in is at `/staff/login` and is not linked from the public pages:
   share that address with volunteers and judges.
 - Home page: `src/pages/Home.tsx`. The description, highlights, schedule and

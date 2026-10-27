@@ -6,8 +6,8 @@ type Picture = { src: string; focus: string };
 const nightCrater: Picture = { src: '/backgrounds/night-base.webp', focus: '62%' };
 
 /**
- * The moon-base scenes behind the portal (public/backgrounds). At night there is
- * only the crater scene, plus a tall outpost scene that phones get.
+ * The moon-base scenes behind the portal (public/backgrounds). There is no wide
+ * night outpost: the night crater stands in, and portrait phones get a tall one.
  */
 const scenes: Record<Scene, { light: Picture; dark: Picture; darkTall?: string }> = {
   // Astronaut on the crater, centre right.
@@ -19,7 +19,10 @@ const scenes: Record<Scene, { light: Picture; dark: Picture; darkTall?: string }
     darkTall: '/backgrounds/night-outpost-tall.webp',
   },
   // Astronaut reading the plan, far left.
-  plan: { light: { src: '/backgrounds/plan.webp', focus: '18%' }, dark: nightCrater },
+  plan: {
+    light: { src: '/backgrounds/plan.webp', focus: '18%' },
+    dark: { src: '/backgrounds/night-plan.webp', focus: '18%' },
+  },
 };
 
 /**
