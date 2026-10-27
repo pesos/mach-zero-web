@@ -83,7 +83,9 @@ describe('the scanner', () => {
     });
     renderPortal('/scan', { session: asStaff('volunteer') });
     expect(await screen.findByText('Choose where you are scanning.')).toBeInTheDocument();
-    await userEvent.selectOptions(await screen.findByLabelText('Checkpoint'), 'cp-gate');
+    // The checkpoints load after the page: wait for the option before choosing it.
+    await screen.findByRole('option', { name: /Gate/ });
+    await userEvent.selectOptions(screen.getByLabelText('Checkpoint'), 'cp-gate');
     expect(window.localStorage.getItem('portal.checkpoint')).toBe('cp-gate');
     await userEvent.type(screen.getByLabelText('QR code or participant ID'), ' PX-0002 ');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));

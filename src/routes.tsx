@@ -1,13 +1,12 @@
 import { Layout } from '@/components/Layout';
 import { basePath, type Paths, routePath } from '@/lib/paths';
 import { Home } from '@/pages/Home';
-import { Judge } from '@/pages/Judge';
+import { LazyJudge, LazyScan } from '@/pages/lazy';
 import { Login } from '@/pages/Login';
 import { Me } from '@/pages/Me';
 import { NotFound } from '@/pages/NotFound';
 import { Notifications } from '@/pages/Notifications';
 import { Register } from '@/pages/Register';
-import { Scan } from '@/pages/Scan';
 import { StaffSignup } from '@/pages/StaffSignup';
 
 /** The pages, on the event's paths (the console can override them). */
@@ -24,8 +23,14 @@ export function portalRoutes(paths: Paths) {
         ...(meBase === '/' ? [] : [{ path: meBase, element: <Me /> }]),
         { path: paths.notifications, element: <Notifications /> },
         { path: '/login', element: <Login /> },
-        { path: '/scan', element: <Scan /> },
-        { path: '/judge', element: <Judge /> },
+        {
+          path: '/scan',
+          element: <LazyScan />,
+        },
+        {
+          path: '/judge',
+          element: <LazyJudge />,
+        },
         { path: '*', element: <NotFound /> },
       ],
     },
