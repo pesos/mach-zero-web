@@ -60,8 +60,8 @@ dashboard link. MachZero's version, in the portal's night theme, is
 `emails/registration.ts`, built with the SDK's `registrationEmail` helpers.
 eventKit fills in and escapes the `{{…}}` values when it sends. Buttons are
 links (mail apps run no scripts), and the email has no QR codes: those appear on
-each dashboard once the team is confirmed. Its images are `public/email/*.png`
-on the live site, so deploy before saving.
+each dashboard once the team is confirmed. It has no images, web fonts or
+hidden text, which spam filters count against a sender.
 
 ```bash
 npm run email -- sample    # fill it offline with a made-up team → email-preview.html

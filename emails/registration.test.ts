@@ -1,6 +1,6 @@
 import Mustache from 'mustache';
 import { describe, expect, it } from 'vitest';
-import { registrationDraft, SITE } from './registration.ts';
+import { registrationDraft } from './registration.ts';
 import { renderSample, sampleView } from './sample.ts';
 
 const parts = Object.entries(registrationDraft);
@@ -45,12 +45,11 @@ describe('the registration email', () => {
     }
   });
 
-  it('loads its images from the live site, as PNG', () => {
-    const images = [...registrationDraft.html.matchAll(/<img[^>]*src="([^"]+)"/g)].map(
-      (m) => m[1]!,
-    );
-    expect(images.length).toBeGreaterThan(0);
-    for (const src of images) expect(src).toMatch(new RegExp(`^${SITE}/email/.+\\.png$`));
+  it('has no images, web fonts or hidden text (spam filters count them)', () => {
+    const { html } = registrationDraft;
+    expect(html).not.toMatch(/<img|background-image|url\(/i);
+    expect(html).not.toMatch(/<link|@import|fonts\.googleapis/i);
+    expect(html).not.toMatch(/display:\s*none/i);
   });
 
   it('stays small enough that Gmail does not clip it', () => {

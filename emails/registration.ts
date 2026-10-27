@@ -1,11 +1,9 @@
 // The email eventKit sends the team leader once a team registers, in the
 // portal's night theme. eventKit fills the {{…}} variables and escapes them;
 // save it with `npm run email -- save` (see README). Mail apps run no scripts,
-// so every button is a link.
+// so every button is a link. No images, web fonts or hidden text: spam filters
+// count them against a sender, and Gmail blocks images in spam anyway.
 import { registrationEmail as t } from '@eventkit/sdk';
-
-/** Where the email's images live (public/email on the deployed portal). */
-export const SITE = 'https://machzero.vercel.app';
 
 // The portal's dark tokens (src/index.css).
 const c = {
@@ -62,7 +60,6 @@ const html = `<!doctype html>
 <meta name="color-scheme" content="dark">
 <meta name="supported-color-schemes" content="dark">
 <title>${t.team.name} is registered for ${t.event.name}</title>
-<link href="https://fonts.googleapis.com/css2?family=Audiowide&amp;family=Space+Grotesk:wght@400;600&amp;display=swap" rel="stylesheet">
 <style>
   body { margin: 0; padding: 0; }
   a { color: ${c.lavender}; }
@@ -73,26 +70,15 @@ const html = `<!doctype html>
 </style>
 </head>
 <body bgcolor="${c.sky}" style="margin:0;padding:0;background:${c.sky};color:${c.text};font-family:${font}">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">Everyone's participant ID and dashboard link for ${t.event.name}.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.sky}" style="background:${c.sky}">
 <tr><td align="center" class="px" style="padding:32px 20px 40px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
-
-<tr><td align="center" style="padding-bottom:18px">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td><img src="${SITE}/email/pesos.png" width="44" height="44" alt="PESOS" style="display:block;border:0"></td>
-    <td style="padding:0 10px;color:${c.soft};font-size:13px">×</td>
-    <td><img src="${SITE}/email/silicon.png" width="44" height="44" alt="Silicon" style="display:block;border:0"></td>
-  </tr></table>
-</td></tr>
 
 <tr><td align="center">
   <span style="display:inline-block;padding:5px 14px;border:1px solid ${c.border};border-radius:999px;background:${c.card};font-family:${display};font-size:11px;letter-spacing:3px;color:${c.text}">PESOS x SILICON PRESENTS</span>
 </td></tr>
 
-<tr><td align="center" style="padding:20px 0 8px">
-  <img src="${SITE}/email/wordmark.png" width="440" alt="MachZero" style="display:block;width:100%;max-width:440px;height:auto;border:0">
-</td></tr>
+<tr><td align="center" style="padding:22px 0 6px;font-family:${display};font-size:44px;line-height:1.1;letter-spacing:2px;color:${c.lavender}">MACH ZERO</td></tr>
 <tr><td align="center" style="padding-bottom:24px;font-size:16px;color:${c.soft}">A 2 day contribution spree.</td></tr>
 
 <tr><td>
