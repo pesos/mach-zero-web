@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+
+/* Mach Zero: a cream sky, lavender haze and chrome type (from the event poster). */
+:root {
+  --background: #f5efe6;
+  --foreground: #3a3252;
+  --card: #fbf8f3;
+  --card-foreground: #3a3252;
+  --primary: #6f5ca6;
+  --primary-foreground: #fbf8f3;
+  --secondary: #ebe3f3;
+  --secondary-foreground: #4b3f73;
+  --muted: #ece5f0;
+  --muted-foreground: #7a7096;
+  --destructive: #c2410c;
+  --border: #ddd3e7;
+  --input: #d6cae3;
+  --ring: #9a87cc;
+  --radius: 0.875rem;
+
+  /* Poster accents */
+  --lavender: #8e7fbf;
+  --haze: #cdbfe2;
+  --rock: #c4b8d2;
+  --rock-deep: #a797bb;
+  --ink: #2e2840;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --color-lavender: var(--lavender);
+  --color-haze: var(--haze);
+  --color-ink: var(--ink);
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Audiowide', 'Space Grotesk', ui-sans-serif, sans-serif;
+  --font-chrome: 'Bagel Fat One', 'Audiowide', ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-normal tracking-wide;
+  }
+}
+
+@layer components {
+  /* Liquid-chrome lettering, like the poster's title. */
+  .chrome-text {
+    font-family: var(--font-chrome);
+    background: linear-gradient(
+      180deg,
+      #fdfcff 0%,
+      #b9b6c6 22%,
+      #5d5970 40%,
+      #e9e7f0 52%,
+      #8d8a9e 66%,
+      #3d3a4c 82%,
+      #c9c6d6 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(46 40 64 / 0.55);
+    filter: drop-shadow(0 2px 0 rgb(255 255 255 / 0.8)) drop-shadow(0 6px 10px rgb(58 50 82 / 0.28));
+  }
+  /* Cards float over the scene. */
+  .glass {
+    background: color-mix(in srgb, var(--card) 84%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.7) inset,
+      0 10px 30px -12px rgb(74 60 120 / 0.25);
+  }
+}
