@@ -31,20 +31,27 @@ replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
   local changes: `CardTitle` is an `<h2>`, and cards are frosted so the
   backgrounds show through.
 - Colours and fonts: `src/index.css` (shadcn's theme tokens on `:root`, plus
-  `.chrome-text`). The site is light only: `dark:` styles need a `.dark` class. Fonts load from Google Fonts in `index.html`: Bagel Fat One
+  `.chrome-text`; the night palette is on `.dark`). Dark mode follows the
+  phone's colour scheme until someone picks a theme with the header's sun/moon
+  button (`src/lib/theme.ts`, saved per device; `index.html` applies it before
+  the first paint). Fonts load from Google Fonts in `index.html`: Bagel Fat One
   (chrome title), Audiowide (headings), Space Grotesk (body).
 - The scene behind every page: `src/components/Backdrop.tsx`, using the
   pictures in `public/backgrounds/` (home: `base`, signed-in pages: `outpost`,
   everything else: `plan`). Each has a focus point so phones crop to the
-  astronaut.
+  astronaut. At night every page uses `night-base`, except signed-in pages on
+  portrait phones, which get `night-outpost-tall`.
 - Staff sign in is at `/staff/login` and is not linked from the public pages:
   share that address with volunteers and judges.
 - Home page: `src/pages/Home.tsx`. The description, highlights, schedule and
   "good to know" notes are in `src/content/event.ts`; everything else (name,
   dates, venue, team size, registration window) comes from the event in the
   console.
-- Icons: `public/favicon.svg`; the PNGs are rendered from it
-  (`rsvg-convert -w 512 -h 512 public/favicon.svg -o public/pwa-512.png`).
+- Icons: the astronaut-helmet logo. `public/logo.png` (header) and
+  `favicon.png` are it trimmed on transparent; `apple-touch-icon.png`,
+  `pwa-192.png`, `pwa-512.png` and `pwa-maskable-512.png` (extra padding) sit
+  on the cream sky. Rendered with ImageMagick, e.g.
+  `magick logo.png -trim -resize 448x448 -background '#f7efe4' -gravity center -extent 512x512 public/pwa-512.png`.
 
 ## Deploy
 

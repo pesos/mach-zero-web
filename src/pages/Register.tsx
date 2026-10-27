@@ -245,7 +245,7 @@ function TeamForm(props: {
 
       <div className="grid gap-4 rounded-xl border bg-card p-6 shadow-md">
         {check.reasons.length > 0 && (
-          <div className="grid gap-2 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <div className="grid gap-2 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/50 dark:text-amber-100">
             <p className="font-semibold">Before you can register</p>
             <ul className="grid list-disc gap-1 pl-5" aria-label="Still needed">
               {check.reasons.map((r) => (

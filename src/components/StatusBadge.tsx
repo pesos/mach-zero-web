@@ -12,12 +12,12 @@ const LABEL: Record<DisplayStatus, string> = {
   confirmation_pending: 'Confirmation pending',
 };
 const TONE: Partial<Record<DisplayStatus, string>> = {
-  confirmed: 'bg-emerald-100 text-emerald-900',
-  attending: 'bg-emerald-100 text-emerald-900',
+  confirmed: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100',
+  attending: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100',
   checked_in: 'bg-success text-white',
-  cancelled: 'bg-red-100 text-red-900',
-  shortlisted: 'bg-sky-100 text-sky-900',
-  confirmation_pending: 'bg-amber-100 text-amber-900',
+  cancelled: 'bg-red-100 text-red-900 dark:bg-red-900/60 dark:text-red-100',
+  shortlisted: 'bg-sky-100 text-sky-900 dark:bg-sky-900/60 dark:text-sky-100',
+  confirmation_pending: 'bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-100',
 };
 
 export function StatusBadge({ status }: { status: DisplayStatus }) {

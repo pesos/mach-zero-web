@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* The poster has one (light) look: shadcn's dark: styles apply only under a .dark class,
-   never because of the phone's colour scheme. */
+/* Dark mode is a .dark class on <html> (src/lib/theme.ts): it follows the phone's colour
+   scheme until someone picks a theme in the header. */
 @custom-variant dark (&:is(.dark *));
 
 /* Mach Zero: a cream sky, lavender haze and chrome type (from the event poster),
@@ -33,6 +33,33 @@
   --lavender: #7c6cb4;
   --haze: #cdbfe2;
   --ink: #2e2840;
+}
+
+/* Mach Zero at night: the moonlit scenes' indigo sky with the same lavender. */
+.dark {
+  --background: #1a1b2f; /* the night backgrounds' sky */
+  --foreground: #ebe5f6;
+  --card: #23243c;
+  --card-foreground: #ebe5f6;
+  --popover: #23243c;
+  --popover-foreground: #ebe5f6;
+  --primary: #a996e6;
+  --primary-foreground: #1a1b2f;
+  --secondary: #302d4d;
+  --secondary-foreground: #ddd3f5;
+  --muted: #2a2a43;
+  --muted-foreground: #a69dc2;
+  --accent: #34305a;
+  --accent-foreground: #ebe5f6;
+  --destructive: #fb7a55;
+  --success: #16a34a;
+  --border: #36354f;
+  --input: #45425f;
+  --ring: #8b78d0;
+
+  --lavender: #a596dc;
+  --haze: #4a3f72;
+  --ink: #ebe5f6;
 }
 
 @theme inline {
@@ -104,5 +131,10 @@
     color: transparent;
     -webkit-text-stroke: 1px rgb(46 40 64 / 0.55);
     filter: drop-shadow(0 2px 0 rgb(255 255 255 / 0.8)) drop-shadow(0 6px 10px rgb(58 50 82 / 0.28));
+  }
+  /* At night the chrome catches the moonlight instead of casting a shadow. */
+  .dark .chrome-text {
+    -webkit-text-stroke: 1px rgb(235 229 246 / 0.35);
+    filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.6)) drop-shadow(0 0 14px rgb(169 150 230 / 0.35));
   }
 }

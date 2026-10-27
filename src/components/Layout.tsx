@@ -6,7 +6,9 @@ import {
   LogOutIcon,
   type LucideIcon,
   MenuIcon,
+  MoonIcon,
   ScanLineIcon,
+  SunIcon,
   UserRoundIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -17,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { basePath } from '@/lib/paths';
 import { forgetSession, useWho } from '@/lib/staff';
+import { setTheme, useTheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 type Section = { to: string; label: string; icon: LucideIcon };
@@ -29,6 +32,7 @@ export function Layout() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
+  const theme = useTheme();
   const sections: Section[] = [];
   if (who.kind === 'participant')
     sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
@@ -81,28 +85,38 @@ export function Layout() {
             className="flex items-center gap-2 font-display text-lg tracking-wider text-ink"
             onClick={() => setMenuOpen(false)}
           >
-            <img src="/favicon.svg" alt="" className="size-7" />
+            <img src="/logo.png" alt="" className="size-8" />
             {info.event.name}
           </Link>
-          {who.kind ? (
-            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-card/80 md:hidden"
-                  aria-label={current ? `Menu: ${current}` : 'Menu'}
-                >
-                  <MenuIcon />
-                  {current ?? 'Menu'}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-72 gap-0 p-4 pt-12">
-                <SheetTitle className="sr-only">Menu</SheetTitle>
-                {menu}
-              </SheetContent>
-            </Sheet>
-          ) : null}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={theme === 'dark' ? 'Use light theme' : 'Use dark theme'}
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </Button>
+            {who.kind ? (
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-card/80 md:hidden"
+                    aria-label={current ? `Menu: ${current}` : 'Menu'}
+                  >
+                    <MenuIcon />
+                    {current ?? 'Menu'}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-72 gap-0 p-4 pt-12">
+                  <SheetTitle className="sr-only">Menu</SheetTitle>
+                  {menu}
+                </SheetContent>
+              </Sheet>
+            ) : null}
+          </div>
         </div>
       </header>
       <div
