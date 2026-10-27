@@ -7,18 +7,21 @@ import {
   useNotifications,
   usePortalMutation,
 } from '@eventkit/sdk/react';
+import { BellOffIcon, BellRingIcon, InfoIcon, SendIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { Link } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
-import { Alert } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { useWho } from '@/lib/staff';
+import { cn } from '@/lib/utils';
 
 /** The notification feed: a participant's (through their link) or staff's, who can also send. */
 export function Notifications() {
@@ -27,12 +30,24 @@ export function Notifications() {
   if (who.kind) return <StaffFeed />;
   return (
     <Alert>
-      Open your personal link to see notifications, or{' '}
-      <Link className="underline" to="/login">
-        sign in
-      </Link>{' '}
-      if you are staff.
+      <InfoIcon />
+      <AlertDescription className="block text-foreground">
+        Open your personal link to see notifications, or{' '}
+        <Link className="font-medium text-primary underline underline-offset-4" to="/login">
+          sign in
+        </Link>{' '}
+        if you are staff.
+      </AlertDescription>
     </Alert>
+  );
+}
+
+function PushButton({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <Button variant="outline" className="w-fit bg-card/80" onClick={onClick}>
+      <BellRingIcon />
+      {on ? 'Urgent alerts on' : 'Get urgent alerts on this device'}
+    </Button>
   );
 }
 
@@ -43,10 +58,8 @@ function ParticipantFeed() {
   return (
     <>
       {ek.portal.me.push.isSupported() && (
-        <div>
-          <Button variant="outline" onClick={() => push.mutate(undefined)}>
-            {push.isSuccess ? 'Urgent alerts on' : 'Get urgent alerts on this device'}
-          </Button>
+        <div className="grid gap-2">
+          <PushButton on={push.isSuccess} onClick={() => push.mutate(undefined)} />
           <ErrorText error={push.error} />
         </div>
       )}
@@ -64,10 +77,8 @@ function StaffFeed() {
   return (
     <>
       {ek.push.isSupported() && (
-        <div>
-          <Button variant="outline" onClick={() => push.mutate(undefined)}>
-            {push.isSuccess ? 'Urgent alerts on' : 'Get urgent alerts on this device'}
-          </Button>
+        <div className="grid gap-2">
+          <PushButton on={push.isSuccess} onClick={() => push.mutate(undefined)} />
           <ErrorText error={push.error} />
         </div>
       )}
@@ -101,29 +112,48 @@ function SendForm({ channels }: { channels: Schemas['Channel'][] }) {
         <CardTitle className="text-base">Send a notification</CardTitle>
       </CardHeader>
       <CardContent>
-        <form className="grid gap-2" onSubmit={submit}>
-          <Label htmlFor="channel">Channel</Label>
-          <Select id="channel" value={channelId} onChange={(e) => setChannelId(e.target.value)}>
-            {channels.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-          <Label htmlFor="title">Title</Label>
-          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-          <Label htmlFor="body">Message</Label>
-          <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} required />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={urgent} onChange={(e) => setUrgent(e.target.checked)} />
-            Urgent (push to phones)
-          </label>
+        <form className="grid gap-4" onSubmit={submit}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="channel">Channel</Label>
+              <NativeSelect
+                id="channel"
+                value={channelId}
+                onChange={(e) => setChannelId(e.target.value)}
+              >
+                {channels.map((c) => (
+                  <NativeSelectOption key={c.id} value={c.id}>
+                    {c.name}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="body">Message</Label>
+            <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} required />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox id="urgent" checked={urgent} onCheckedChange={(v) => setUrgent(v === true)} />
+            <Label htmlFor="urgent" className="font-normal">
+              Urgent (push to phones)
+            </Label>
+          </div>
           <ErrorText error={send.error} />
-          {send.isSuccess && <p role="status">Sent.</p>}
-          <div>
+          <div className="flex items-center gap-3">
             <Button type="submit" disabled={send.isPending}>
+              <SendIcon />
               Send
             </Button>
+            {send.isSuccess && (
+              <p role="status" className="text-sm text-success">
+                Sent.
+              </p>
+            )}
           </div>
         </form>
       </CardContent>
@@ -133,20 +163,30 @@ function SendForm({ channels }: { channels: Schemas['Channel'][] }) {
 
 function Feed({ items, error }: { items: Schemas['Notification'][] | undefined; error: unknown }) {
   return (
-    <section aria-label="Notifications" className="grid gap-2">
+    <section aria-label="Notifications" className="grid gap-3">
       <ErrorText error={error} />
-      {items?.length === 0 && <p className="text-muted-foreground">No notifications yet.</p>}
+      {items?.length === 0 && (
+        <div className="grid justify-items-center gap-2 rounded-xl border border-dashed bg-card/70 p-8 text-center">
+          <BellOffIcon className="size-6 text-muted-foreground" aria-hidden />
+          <p className="text-sm text-muted-foreground">No notifications yet.</p>
+        </div>
+      )}
       {items?.map((n) => (
-        <Card key={n.id}>
+        <Card
+          key={n.id}
+          className={cn('gap-3', n.priority === 'urgent' && 'border-l-4 border-l-destructive')}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              {n.title} {n.priority === 'urgent' && <Badge>Urgent</Badge>}
+              {n.title} {n.priority === 'urgent' && <Badge variant="destructive">Urgent</Badge>}
             </CardTitle>
             <p className="text-xs text-muted-foreground">
               {n.channel.name} · {n.sender.name} · {formatIST(n.sentAt)}
             </p>
           </CardHeader>
-          <CardContent className="whitespace-pre-line text-sm">{n.body}</CardContent>
+          <CardContent className="text-sm leading-relaxed whitespace-pre-line">
+            {n.body}
+          </CardContent>
         </Card>
       ))}
     </section>

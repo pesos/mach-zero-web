@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
+import { Loading } from '@/components/Loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,7 +38,7 @@ export function StaffSignup() {
     portal.staff.signup({ linkToken: token, ...v }),
   );
 
-  if (link.isPending) return <p className="text-muted-foreground">Checking the link…</p>;
+  if (link.isPending) return <Loading>Checking the link…</Loading>;
   if (link.isError) return <ErrorText error={link.error} />;
   if (link.data.kind !== 'staff') {
     return <ErrorText error={new Error('This is not a staff link.')} />;
@@ -53,15 +54,17 @@ export function StaffSignup() {
     });
   };
   return (
-    <Card>
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle>Join as a {role}</CardTitle>
+        <CardTitle className="font-display text-xl font-normal tracking-wide">
+          Join as a {role}
+        </CardTitle>
         <CardDescription>
           Create your account for this event. Later, sign in with it on this site.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="grid gap-3" onSubmit={submit}>
+        <form className="grid gap-4" onSubmit={submit}>
           {FIELDS.map(([name, label, type, autoComplete]) => (
             <div key={name} className="grid gap-1">
               <Label htmlFor={name}>{label}</Label>
@@ -76,11 +79,9 @@ export function StaffSignup() {
             </div>
           ))}
           <ErrorText error={signup.error} />
-          <div>
-            <Button type="submit" disabled={signup.isPending}>
-              Create account
-            </Button>
-          </div>
+          <Button type="submit" className="w-full" disabled={signup.isPending}>
+            Create account
+          </Button>
         </form>
       </CardContent>
     </Card>

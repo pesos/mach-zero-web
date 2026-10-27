@@ -200,7 +200,7 @@ describe('registering a team', () => {
       receiptKey: 'events/e/receipt/k.png',
     });
     expect(screen.getByText('PX-0001')).toBeInTheDocument();
-    expect(screen.getByText('(leader)')).toBeInTheDocument();
+    expect(screen.getByText('Leader')).toBeInTheDocument();
     expect(screen.getByText('https://portal.test/me/ek_a')).toBeInTheDocument();
     // Without a portal URL, the token itself is shown.
     expect(screen.getByText('ek_r')).toBeInTheDocument();

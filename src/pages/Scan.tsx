@@ -1,14 +1,22 @@
 import { describeScan, type ScanResult } from '@eventkit/sdk';
 import { useEventQuery, useScanner } from '@eventkit/sdk/react';
 import { Scanner as Camera } from '@yudiel/react-qr-scanner';
+import {
+  CameraOffIcon,
+  CircleCheckIcon,
+  CircleXIcon,
+  UtensilsIcon,
+  WifiOffIcon,
+} from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
 import { StaffOnly } from '@/components/StaffOnly';
-import { Alert } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { cn } from '@/lib/utils';
 
 const CHECKPOINT_KEY = 'portal.checkpoint';
@@ -45,33 +53,35 @@ function ScanPage() {
   const valid = checkpoints.data?.some((c) => c.id === checkpointId) ? checkpointId : '';
   return (
     <div className="grid gap-4">
-      <div className="grid gap-1">
-        <Label htmlFor="checkpoint">Checkpoint</Label>
-        <Select
-          id="checkpoint"
-          value={valid}
-          onChange={(e) => {
-            setCheckpointId(e.target.value);
-            try {
-              localStorage.setItem(CHECKPOINT_KEY, e.target.value);
-            } catch {
-              // Storage off: choose again next time.
-            }
-          }}
-        >
-          <option value="">Choose a checkpoint…</option>
-          {checkpoints.data?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
-        <ErrorText error={checkpoints.error} />
-      </div>
+      <Card className="py-4">
+        <CardContent className="grid gap-2 px-4">
+          <Label htmlFor="checkpoint">Checkpoint</Label>
+          <NativeSelect
+            id="checkpoint"
+            value={valid}
+            onChange={(e) => {
+              setCheckpointId(e.target.value);
+              try {
+                localStorage.setItem(CHECKPOINT_KEY, e.target.value);
+              } catch {
+                // Storage off: choose again next time.
+              }
+            }}
+          >
+            <NativeSelectOption value="">Choose a checkpoint…</NativeSelectOption>
+            {checkpoints.data?.map((c) => (
+              <NativeSelectOption key={c.id} value={c.id}>
+                {c.name}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+          <ErrorText error={checkpoints.error} />
+        </CardContent>
+      </Card>
       {valid ? (
         <Scanning checkpointId={valid} />
       ) : (
-        <p className="text-muted-foreground">Choose where you are scanning.</p>
+        <p className="text-sm text-muted-foreground">Choose where you are scanning.</p>
       )}
     </div>
   );
@@ -105,18 +115,25 @@ function Scanning({ checkpointId }: { checkpointId: string }) {
     if (code) void submit(code);
     setTyped('');
   };
+  const accepted = result?.result === 'accepted';
 
   return (
     <div className="grid gap-4">
       {!online && (
-        <Alert variant="destructive" role="alert">
-          No connection. Scanning is paused until it is back.
+        <Alert variant="destructive" className="border-destructive/40">
+          <WifiOffIcon />
+          <AlertDescription>No connection. Scanning is paused until it is back.</AlertDescription>
         </Alert>
       )}
       {cameraError ? (
-        <Alert>Camera unavailable ({cameraError}). Type codes below.</Alert>
+        <Alert>
+          <CameraOffIcon />
+          <AlertDescription className="text-foreground">
+            {`Camera unavailable (${cameraError}). Type codes below.`}
+          </AlertDescription>
+        </Alert>
       ) : (
-        <div className="overflow-hidden rounded-lg border bg-black">
+        <div className="mx-auto w-full max-w-md overflow-hidden rounded-xl border bg-black shadow-lg">
           <Camera
             onScan={(codes) => {
               const code = codes[0]?.rawValue;
@@ -135,6 +152,7 @@ function Scanning({ checkpointId }: { checkpointId: string }) {
         <Input
           aria-label="QR code or participant ID"
           placeholder="Participant ID (e.g. MZ-0042) or QR code"
+          className="bg-card"
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
         />
@@ -146,22 +164,31 @@ function Scanning({ checkpointId }: { checkpointId: string }) {
         <div
           role="status"
           className={cn(
-            'rounded-lg p-4 text-center',
-            result.result === 'accepted' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
+            'grid justify-items-center gap-1 rounded-xl p-6 text-center text-white shadow-lg',
+            accepted ? 'bg-success' : 'bg-red-600',
           )}
         >
+          {accepted ? (
+            <CircleCheckIcon className="size-10" aria-hidden />
+          ) : (
+            <CircleXIcon className="size-10" aria-hidden />
+          )}
           <div className="text-2xl font-bold">{describeScan(result)}</div>
           {result.participant && (
-            <div>
+            <div className="text-white/90">
               {result.participant.name} · {result.participant.participantCode} ·{' '}
               {result.participant.teamName}
             </div>
           )}
-          {result.meal && <div className="mt-1 text-lg">Hand over: {result.meal.label}</div>}
+          {result.meal && (
+            <div className="mt-2 flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-lg font-medium">
+              <UtensilsIcon className="size-5" aria-hidden />
+              <span>Hand over: {result.meal.label}</span>
+            </div>
+          )}
           {result.reason === 'not_attending' && scanner && (
             <Button
-              className="mt-2 bg-white text-red-700 hover:bg-white/90"
-              variant="outline"
+              className="mt-3 bg-white text-red-700 hover:bg-white/90"
               onClick={() => void run(() => scanner.markAttendingAndScan(lastCode), lastCode)}
             >
               Mark attending and check in

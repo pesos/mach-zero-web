@@ -26,8 +26,12 @@ replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
 
 ## Theme
 
-- Colours and fonts: `src/index.css` (tokens on `:root`, plus `.chrome-text`
-  and `.glass`). Fonts load from Google Fonts in `index.html`: Bagel Fat One
+- Components are [shadcn/ui](https://ui.shadcn.com) (`src/components/ui`, set
+  up in `components.json`); add more with `npx shadcn@latest add <name>`. Two
+  local changes: `CardTitle` is an `<h2>`, and cards are frosted so the
+  backgrounds show through.
+- Colours and fonts: `src/index.css` (shadcn's theme tokens on `:root`, plus
+  `.chrome-text`). The site is light only: `dark:` styles need a `.dark` class. Fonts load from Google Fonts in `index.html`: Bagel Fat One
   (chrome title), Audiowide (headings), Space Grotesk (body).
 - The scene behind every page: `src/components/Backdrop.tsx`, using the
   pictures in `public/backgrounds/` (home: `base`, signed-in pages: `outpost`,

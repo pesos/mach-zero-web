@@ -1,6 +1,5 @@
 import type { Schemas } from '@eventkit/sdk';
 import { http, HttpResponse } from 'msw';
-import { vi } from 'vitest';
 import { BUCKET, E, EVENT_ID, P, portalInfo, server, token } from './server';
 
 const T0 = '2026-10-20T10:00:00.000Z';
@@ -156,6 +155,3 @@ export function asStaff(role: 'admin' | 'volunteer' | 'judge'): string {
   );
   return token(role === 'admin' ? 'client' : 'staff', `user-${role}`);
 }
-
-/** window.confirm answers `answer` for the rest of the test. */
-export const confirmWith = (answer: boolean) => vi.spyOn(window, 'confirm').mockReturnValue(answer);

@@ -1,4 +1,6 @@
 import { usePortalInfo } from '@eventkit/sdk/react';
+import { FileTextIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const IMAGE = /\.(jpe?g|png|webp)(\?|$)/i;
 
@@ -14,30 +16,35 @@ export function PaymentInstructions() {
     );
   }
   return (
-    <div className="grid gap-3 text-sm" aria-label="How to pay">
-      {paymentInstructions && <p className="whitespace-pre-line">{paymentInstructions}</p>}
-      {paymentInstructionsUrl &&
-        (IMAGE.test(new URL(paymentInstructionsUrl).pathname) ? (
-          <img
-            src={paymentInstructionsUrl}
-            alt="Payment instructions"
-            className="max-h-96 w-full rounded border object-contain"
-          />
-        ) : (
-          <a
-            href={paymentInstructionsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium underline"
-          >
-            Open the payment instructions (PDF)
-          </a>
-        ))}
+    <div
+      className="grid gap-4 rounded-lg border bg-muted/50 p-4 text-sm sm:grid-cols-[1fr_auto]"
+      aria-label="How to pay"
+    >
+      <div className="grid content-start gap-3">
+        {paymentInstructions && (
+          <p className="leading-relaxed whitespace-pre-line">{paymentInstructions}</p>
+        )}
+        {paymentInstructionsUrl &&
+          (IMAGE.test(new URL(paymentInstructionsUrl).pathname) ? (
+            <img
+              src={paymentInstructionsUrl}
+              alt="Payment instructions"
+              className="max-h-96 w-full rounded-md border bg-white object-contain"
+            />
+          ) : (
+            <Button asChild variant="outline" size="sm" className="w-fit">
+              <a href={paymentInstructionsUrl} target="_blank" rel="noreferrer">
+                <FileTextIcon />
+                Open the payment instructions (PDF)
+              </a>
+            </Button>
+          ))}
+      </div>
       {paymentQrUrl && (
         <img
           src={paymentQrUrl}
           alt="UPI QR code to pay"
-          className="h-48 w-48 rounded border object-contain"
+          className="size-44 justify-self-center rounded-md border bg-white object-contain p-2"
         />
       )}
     </div>

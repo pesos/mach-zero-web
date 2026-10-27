@@ -1,7 +1,17 @@
 import { describeFee, formatIST } from '@eventkit/sdk';
 import { usePortalInfo } from '@eventkit/sdk/react';
+import {
+  ArrowRightIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  type LucideIcon,
+  MapPinIcon,
+  UsersIcon,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   about,
@@ -12,71 +22,89 @@ import {
   type Slot,
   tagline,
 } from '@/content/event';
-import { cn } from '@/lib/utils';
 import { basePath } from '@/lib/paths';
 import { useWho } from '@/lib/staff';
+import { cn } from '@/lib/utils';
+
+const sectionTitle = 'font-display text-xl font-normal tracking-wide';
 
 export function Home() {
   const { event, registrationOpen, paths } = usePortalInfo().data!;
   const who = useWho();
   const days = istDays(event.startAt, event.endAt);
+  const fee = describeFee(event);
   return (
     <>
-      <section className="grid justify-items-center gap-6 bg-[radial-gradient(ellipse_closest-side,var(--background)_55%,transparent)] py-6 text-center sm:py-10">
+      <section className="grid justify-items-center gap-5 py-4 text-center sm:py-8">
+        <Badge variant="outline" className="bg-card/70 font-display tracking-[0.2em] uppercase">
+          by {event.hostedBy}
+        </Badge>
         <h2 className="chrome-text text-5xl leading-[1.05] break-words sm:text-7xl">
           {event.name}
         </h2>
-        <p className="max-w-md text-lg text-foreground/80">{tagline}</p>
-        <p className="font-display text-xs tracking-[0.25em] text-muted-foreground uppercase">
-          by {event.hostedBy}
-        </p>
-        <ul className="grid gap-3 font-display text-lavender sm:text-lg">
-          <PosterRow icon={<CalendarIcon />}>{days.join(' & ')}</PosterRow>
-          <PosterRow icon={<ClockIcon />}>{dailyHours}</PosterRow>
-          <PosterRow icon={<PinIcon />}>{event.venue}</PosterRow>
-          <PosterRow icon={<PeopleIcon />}>
-            Teams of {event.minTeamSize}–{event.maxTeamSize}
-            {describeFee(event) && ` · ${describeFee(event)}`}
-            {' · '}
-            {event.placesLeft} places left
-          </PosterRow>
-        </ul>
+        <p className="max-w-md text-lg text-balance text-foreground/80">{tagline}</p>
       </section>
-      <Card>
-        <CardContent className="grid gap-3 pt-6 text-sm">
-          <p className="flex items-start gap-3">
-            <span
-              className={`mt-1.5 size-2.5 shrink-0 rounded-full ${registrationOpen ? 'bg-primary shadow-[0_0_0_4px_var(--secondary)]' : 'bg-muted-foreground/50'}`}
-            />
-            <span>
+
+      <ul className="grid gap-3 sm:grid-cols-2">
+        <Fact icon={CalendarDaysIcon} label="When">
+          {days.join(' & ')}
+        </Fact>
+        <Fact icon={ClockIcon} label="Hours">
+          {dailyHours}
+        </Fact>
+        <Fact icon={MapPinIcon} label="Where">
+          {event.venue}
+        </Fact>
+        <Fact icon={UsersIcon} label="Teams">
+          Teams of {event.minTeamSize}–{event.maxTeamSize}
+          {fee && ` · ${fee}`}
+          {' · '}
+          {event.placesLeft} places left
+        </Fact>
+      </ul>
+
+      <Card className={cn(registrationOpen && 'border-primary/30')}>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid gap-2">
+            <Badge
+              variant={registrationOpen ? 'default' : 'secondary'}
+              className="gap-1.5 font-sans"
+            >
+              <span
+                className={cn(
+                  'size-1.5 rounded-full',
+                  registrationOpen ? 'animate-pulse bg-primary-foreground' : 'bg-muted-foreground',
+                )}
+              />
+              {registrationOpen ? 'Registration open' : 'Registration closed'}
+            </Badge>
+            <p className="text-sm leading-relaxed">
               {registrationOpen
                 ? `Registration is open until ${formatIST(event.registrationDeadline)}. Your team leader registers everyone through the registration link from the organisers.`
                 : `Registration is not open. It runs ${formatIST(event.registrationStart)} – ${formatIST(event.registrationDeadline)}.`}
-            </span>
-          </p>
+            </p>
+            {!who.kind && (
+              <p className="text-sm text-muted-foreground">
+                Registered already? Open the personal link you were given.
+              </p>
+            )}
+          </div>
           {who.kind === 'participant' && (
-            <p>
-              <Link
-                className="inline-flex h-10 items-center rounded-full bg-primary px-5 font-medium text-primary-foreground hover:bg-primary/90"
-                to={basePath(paths.me)}
-              >
+            <Button asChild size="lg" className="shrink-0">
+              <Link to={basePath(paths.me)}>
                 Open your registration
+                <ArrowRightIcon />
               </Link>
-            </p>
-          )}
-          {!who.kind && (
-            <p className="text-muted-foreground">
-              Registered already? Open the personal link you were given.
-            </p>
+            </Button>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>About</CardTitle>
+          <CardTitle className={sectionTitle}>About</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 text-sm leading-relaxed">
+        <CardContent className="grid gap-3 text-sm leading-relaxed text-foreground/85">
           {about.map((p) => (
             <p key={p}>{p}</p>
           ))}
@@ -85,21 +113,21 @@ export function Home() {
 
       <ul aria-label="At a glance" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {highlights.map((h) => (
-          <li key={h.label} className="glass rounded-lg border p-4">
+          <li key={h.label} className="rounded-xl border bg-card/85 p-4 shadow-sm backdrop-blur-md">
             <p className="font-display text-xl text-primary">{h.value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{h.label}</p>
+            <p className="mt-1 text-xs leading-snug text-muted-foreground">{h.label}</p>
           </li>
         ))}
       </ul>
 
       <Card>
         <CardHeader>
-          <CardTitle>Schedule</CardTitle>
+          <CardTitle className={sectionTitle}>Schedule</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-6 sm:grid-cols-2">
+        <CardContent className="grid gap-8 sm:grid-cols-2">
           {schedule.map((slots, i) => (
             <section key={i} aria-label={`Day ${i + 1}`}>
-              <h3 className="mb-3 text-sm text-lavender">
+              <h3 className="mb-4 font-display text-sm tracking-wide text-lavender">
                 Day {i + 1}
                 {days[i] && (
                   <>
@@ -108,7 +136,7 @@ export function Home() {
                   </>
                 )}
               </h3>
-              <ol className="grid gap-2 border-l-2 border-haze pl-4">
+              <ol className="grid gap-3 border-l-2 border-haze pl-5">
                 {slots.map((s) => (
                   <ScheduleItem key={s.time} slot={s} />
                 ))}
@@ -120,13 +148,13 @@ export function Home() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Good to know</CardTitle>
+          <CardTitle className={sectionTitle}>Good to know</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
+        <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
           {goodToKnow.map((g) => (
-            <div key={g.title}>
+            <div key={g.title} className="rounded-lg bg-muted/60 p-4">
               <p className="font-medium">{g.title}</p>
-              <p className="mt-1 text-muted-foreground">{g.body}</p>
+              <p className="mt-1 leading-relaxed text-muted-foreground">{g.body}</p>
             </div>
           ))}
         </CardContent>
@@ -158,60 +186,36 @@ function ScheduleItem({ slot }: { slot: Slot }) {
     <li className="relative">
       <span
         className={cn(
-          'absolute top-1.5 -left-[1.3rem] size-2.5 rounded-full border-2 border-background',
+          'absolute top-1 -left-[1.6rem] size-3 rounded-full border-2 border-card',
           slot.kind === 'round' ? 'bg-primary' : slot.kind === 'talk' ? 'bg-lavender' : 'bg-haze',
         )}
       />
-      <p className="font-display text-xs text-muted-foreground">{slot.time}</p>
-      <p className={cn('text-sm', slot.kind === 'round' && 'font-medium')}>{slot.title}</p>
+      <p className="text-xs text-muted-foreground tabular-nums">{slot.time}</p>
+      <p className={cn('text-sm', slot.kind === 'round' && 'font-semibold text-primary')}>
+        {slot.title}
+      </p>
     </li>
   );
 }
 
-function PosterRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+function Fact({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  children: ReactNode;
+}) {
   return (
-    <li className="flex items-center justify-center gap-3">
-      <span className="text-ink">{icon}</span>
-      <span>{children}</span>
+    <li className="flex items-center gap-3 rounded-xl border bg-card/85 p-3 shadow-sm backdrop-blur-md">
+      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
+        <Icon className="size-5" />
+      </span>
+      <span className="grid min-w-0">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-sm font-medium">{children}</span>
+      </span>
     </li>
   );
 }
-
-const iconProps = {
-  viewBox: '0 0 24 24',
-  className: 'size-6 shrink-0',
-  'aria-hidden': true,
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 2,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-} as const;
-
-const CalendarIcon = () => (
-  <svg {...iconProps}>
-    <rect x="3" y="5" width="18" height="16" rx="2" />
-    <path d="M3 10h18M8 3v4M16 3v4M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2" />
-  </svg>
-);
-
-const ClockIcon = () => (
-  <svg {...iconProps}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 7v5l3 2" />
-  </svg>
-);
-
-const PinIcon = () => (
-  <svg {...iconProps}>
-    <path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z" />
-    <circle cx="12" cy="9.5" r="2.5" />
-  </svg>
-);
-
-const PeopleIcon = () => (
-  <svg {...iconProps}>
-    <circle cx="9" cy="8" r="3.5" />
-    <path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.6 5.2" />
-  </svg>
-);

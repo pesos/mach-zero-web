@@ -10,16 +10,26 @@ import {
 } from '@eventkit/sdk';
 import { useEventKit, usePortalInfo, usePortalMutation } from '@eventkit/sdk/react';
 import { useQuery } from '@tanstack/react-query';
+import { CalendarClockIcon, CircleCheckIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { type FormEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import { CopyButton } from '@/components/CopyButton';
 import { ErrorText } from '@/components/ErrorText';
 import { FieldInputs } from '@/components/FieldInputs';
-import { Alert } from '@/components/ui/alert';
+import { Loading } from '@/components/Loading';
 import { PaymentInstructions } from '@/components/PaymentInstructions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -45,7 +55,7 @@ export function Register() {
   );
 
   if (register.data) return <Registered result={register.data} />;
-  if (link.isPending) return <p className="text-muted-foreground">Checking the link…</p>;
+  if (link.isPending) return <Loading>Checking the link…</Loading>;
   if (link.isError) return <ErrorText error={link.error} />;
   if (link.data.kind !== 'registration') {
     return <ErrorText error={new Error('This is not a registration link.')} />;
@@ -53,8 +63,11 @@ export function Register() {
   if (!info.registrationOpen) {
     return (
       <Alert>
-        Registration is not open. It runs {formatIST(info.event.registrationStart)} –{' '}
-        {formatIST(info.event.registrationDeadline)}.
+        <CalendarClockIcon />
+        <AlertDescription className="block text-foreground">
+          Registration is not open. It runs {formatIST(info.event.registrationStart)} –{' '}
+          {formatIST(info.event.registrationDeadline)}.
+        </AlertDescription>
       </Alert>
     );
   }
@@ -106,17 +119,19 @@ function TeamForm(props: {
   };
 
   return (
-    <form className="grid gap-4" onSubmit={submit}>
+    <form className="grid gap-6" onSubmit={submit}>
       <Card>
         <CardHeader>
-          <CardTitle>Register your team</CardTitle>
+          <CardTitle className="font-display text-xl font-normal tracking-wide">
+            Register your team
+          </CardTitle>
           <CardDescription>
             The team leader fills this in for everyone ({event.minTeamSize}–{event.maxTeamSize}{' '}
             members). Each member then gets a participant ID, a QR code and a personal link.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3">
-          <div className="grid gap-1">
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2 sm:col-span-2">
             <Label htmlFor="team-name">Team name</Label>
             <Input id="team-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
@@ -127,7 +142,7 @@ function TeamForm(props: {
             onChange={setTeamAnswers}
           />
           {teamRules.length > 0 && (
-            <ul className="list-disc pl-5 text-sm text-muted-foreground">
+            <ul className="list-disc rounded-lg bg-muted/60 py-3 pr-4 pl-8 text-sm text-muted-foreground sm:col-span-2">
               {teamRules.map((r) => (
                 <li key={r.id}>{r.description}</li>
               ))}
@@ -138,24 +153,34 @@ function TeamForm(props: {
 
       {members.map((m, i) => (
         <Card key={i}>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-base">
+              <span
+                aria-hidden
+                className="grid size-7 place-items-center rounded-full bg-secondary text-xs text-secondary-foreground"
+              >
+                {i + 1}
+              </span>
               {i === 0 ? 'You (team leader)' : `Member ${i + 1}`}
             </CardTitle>
             {i > 0 && members.length > event.minTeamSize && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setMembers(members.filter((_, j) => j !== i))}
-              >
-                Remove
-              </Button>
+              <CardAction>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => setMembers(members.filter((_, j) => j !== i))}
+                >
+                  <Trash2Icon />
+                  Remove
+                </Button>
+              </CardAction>
             )}
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="grid gap-4 sm:grid-cols-2">
             {CONTACT.map(([key, label, type, autoComplete]) => (
-              <div key={key} className="grid gap-1">
+              <div key={key} className={key === 'name' ? 'grid gap-2 sm:col-span-2' : 'grid gap-2'}>
                 <Label htmlFor={`m${i}-${key}`}>{label}</Label>
                 <Input
                   id={`m${i}-${key}`}
@@ -176,11 +201,15 @@ function TeamForm(props: {
         </Card>
       ))}
       {members.length < event.maxTeamSize && (
-        <div>
-          <Button type="button" variant="outline" onClick={() => setMembers([...members, blank()])}>
-            Add a member
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 border-dashed bg-card/60"
+          onClick={() => setMembers([...members, blank()])}
+        >
+          <PlusIcon />
+          Add a member
+        </Button>
       )}
 
       {paysNow && (
@@ -194,30 +223,40 @@ function TeamForm(props: {
               Pay as shown below, then upload the receipt (a screenshot or PDF).
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid gap-4">
             <PaymentInstructions />
-            <Label htmlFor="receipt">Payment receipt</Label>
-            <input
-              id="receipt"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
-            />
+            <div className="grid gap-2">
+              <Label htmlFor="receipt">Payment receipt</Label>
+              <Input
+                id="receipt"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
+              />
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {check.reasons.length > 0 && (
-        <ul className="list-disc pl-5 text-sm text-muted-foreground" aria-label="Still needed">
-          {check.reasons.map((r) => (
-            <li key={r}>{r}</li>
-          ))}
-          {paysNow && !receipt && <li>Upload the payment receipt.</li>}
-        </ul>
-      )}
-      <ErrorText error={props.error} />
-      <div>
-        <Button type="submit" disabled={!check.ok || (paysNow && !receipt) || props.submitting}>
+      <div className="grid gap-4 rounded-xl border bg-card/90 p-6 shadow-sm backdrop-blur-md">
+        {check.reasons.length > 0 && (
+          <div className="grid gap-1 text-sm">
+            <p className="font-medium">Before you can register</p>
+            <ul className="list-disc pl-5 text-muted-foreground" aria-label="Still needed">
+              {check.reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+              {paysNow && !receipt && <li>Upload the payment receipt.</li>}
+            </ul>
+          </div>
+        )}
+        <ErrorText error={props.error} />
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full sm:w-fit"
+          disabled={!check.ok || (paysNow && !receipt) || props.submitting}
+        >
           {props.submitting ? 'Registering…' : 'Register team'}
         </Button>
       </div>
@@ -230,27 +269,35 @@ type Result = Awaited<ReturnType<ReturnType<typeof useEventKit>['portal']['regis
 /** Shown once: every member's ID, QR code and personal link. */
 function Registered({ result }: { result: Result }) {
   return (
-    <div className="grid gap-4">
-      <Alert>
-        <strong>{result.team.name} is registered.</strong> Save this page now (screenshot or copy
-        the links): the personal links are shown only once. Send each member their own link; it lets
-        them check their status, RSVP and vote.
+    <div className="grid gap-6">
+      <Alert className="border-success/40">
+        <CircleCheckIcon className="text-success" />
+        <AlertTitle>{result.team.name} is registered.</AlertTitle>
+        <AlertDescription>
+          Save this page now (screenshot or copy the links): the personal links are shown only once.
+          Send each member their own link; it lets them check their status, RSVP and vote.
+        </AlertDescription>
       </Alert>
       {result.members.map((m) => (
         <Card key={m.registrationId}>
           <CardHeader>
-            <CardTitle className="text-base">
-              {m.name} {m.isLeader && <span className="text-sm font-normal">(leader)</span>}
+            <CardTitle className="flex items-center gap-2 text-base">
+              {m.name} {m.isLeader && <Badge variant="secondary">Leader</Badge>}
             </CardTitle>
             <CardDescription>
-              Participant ID <span className="font-mono font-semibold">{m.participantCode}</span>
+              Participant ID{' '}
+              <span className="font-mono font-semibold text-foreground">{m.participantCode}</span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-start gap-4">
-            <QRCodeSVG value={m.qrToken} size={128} title={`${m.name}'s check-in QR code`} />
+          <CardContent className="flex flex-wrap items-start gap-5">
+            <div className="rounded-lg border bg-white p-2">
+              <QRCodeSVG value={m.qrToken} size={128} title={`${m.name}'s check-in QR code`} />
+            </div>
             <div className="grid min-w-0 flex-1 gap-2 text-sm">
-              <div>Personal link:</div>
-              <div className="break-all font-mono text-xs">{m.link.url ?? m.link.token}</div>
+              <p className="text-muted-foreground">Personal link</p>
+              <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs break-all">
+                {m.link.url ?? m.link.token}
+              </p>
               <div>
                 <CopyButton text={m.link.url ?? m.link.token} label="Copy link" />
               </div>

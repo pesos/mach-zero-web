@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useMemo, useState } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
+import { Loading } from '@/components/Loading';
 import { portalRoutes } from '@/routes';
 
 export function Providers({ ek, children }: { ek: EventKit; children: ReactNode }) {
@@ -29,6 +30,12 @@ export function App() {
       </main>
     );
   }
-  if (!router) return <p className="p-4 text-muted-foreground">Loading…</p>;
+  if (!router) {
+    return (
+      <div className="grid min-h-svh place-items-center">
+        <Loading />
+      </div>
+    );
+  }
   return <RouterProvider router={router} />;
 }

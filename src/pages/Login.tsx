@@ -31,17 +31,19 @@ export function Login() {
     );
   };
   return (
-    <Card>
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle>Staff sign in</CardTitle>
+        <CardTitle className="font-display text-xl font-normal tracking-wide">
+          Staff sign in
+        </CardTitle>
         <CardDescription>
           Volunteers and judges of this event, and its organiser. Participants don't sign in: use
           your personal link.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="grid gap-3" onSubmit={submit}>
-          <div className="grid gap-1">
+        <form className="grid gap-4" onSubmit={submit}>
+          <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -52,7 +54,7 @@ export function Login() {
               required
             />
           </div>
-          <div className="grid gap-1">
+          <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
@@ -64,11 +66,9 @@ export function Login() {
             />
           </div>
           <ErrorText error={login.error} />
-          <div>
-            <Button type="submit" disabled={login.isPending}>
-              Sign in
-            </Button>
-          </div>
+          <Button type="submit" className="w-full" disabled={login.isPending}>
+            Sign in
+          </Button>
         </form>
       </CardContent>
     </Card>

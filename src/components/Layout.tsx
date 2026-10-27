@@ -1,12 +1,25 @@
 import { useEventKit, usePortalInfo } from '@eventkit/sdk/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import {
+  BellIcon,
+  GavelIcon,
+  LogOutIcon,
+  type LucideIcon,
+  MenuIcon,
+  ScanLineIcon,
+  UserRoundIcon,
+} from 'lucide-react';
+import { useState } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { Backdrop } from '@/components/Backdrop';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { basePath } from '@/lib/paths';
 import { forgetSession, useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
+
+type Section = { to: string; label: string; icon: LucideIcon };
 
 export function Layout() {
   const ek = useEventKit();
@@ -16,134 +29,106 @@ export function Layout() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  // Escape closes the phone menu, wherever focus is.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [menuOpen]);
-  const links: [string, string][] = [];
-  if (who.kind === 'participant') links.push([basePath(info.paths.me), 'My registration']);
-  if (who.canScan) links.push(['/scan', 'Scan']);
-  if (who.canJudge) links.push(['/judge', 'Judge']);
-  if (who.kind) links.push([info.paths.notifications, 'Notifications']);
-  const current = links.find(([to]) => to === pathname)?.[1];
+  const sections: Section[] = [];
+  if (who.kind === 'participant')
+    sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
+  if (who.canScan) sections.push({ to: '/scan', label: 'Scan', icon: ScanLineIcon });
+  if (who.canJudge) sections.push({ to: '/judge', label: 'Judge', icon: GavelIcon });
+  if (who.kind)
+    sections.push({ to: info.paths.notifications, label: 'Notifications', icon: BellIcon });
+  const current = sections.find((s) => s.to === pathname)?.label;
   const signOut = () => {
     setMenuOpen(false);
     ek.portal.logout();
     forgetSession(queryClient);
     void navigate('/');
   };
+  const menu = (
+    <nav aria-label="Portal" className="grid gap-1">
+      {sections.map(({ to, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          onClick={() => setMenuOpen(false)}
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            )
+          }
+        >
+          <Icon className="size-4" />
+          {label}
+        </NavLink>
+      ))}
+      <Separator className="my-2" />
+      <Button variant="ghost" className="justify-start gap-3 px-3" onClick={signOut}>
+        <LogOutIcon />
+        Sign out
+      </Button>
+    </nav>
+  );
 
   return (
-    <div className="relative isolate min-h-svh pb-[40svh]">
+    <div className="relative isolate flex min-h-svh flex-col">
       <Backdrop scene={pathname === '/' ? 'base' : who.kind ? 'outpost' : 'plan'} />
-      <header className="sticky top-0 z-10 border-b border-border/60 bg-background/70 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
-          <NavLink
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
+          <Link
             to="/"
-            className="font-display text-lg leading-none tracking-wider text-ink"
+            className="flex items-center gap-2 font-display text-lg tracking-wider text-ink"
             onClick={() => setMenuOpen(false)}
           >
+            <img src="/favicon.svg" alt="" className="size-7" />
             {info.event.name}
-          </NavLink>
+          </Link>
           {who.kind ? (
-            <button
-              type="button"
-              aria-expanded={menuOpen}
-              aria-controls="portal-menu"
-              aria-label={current ? `Menu: ${current}` : 'Menu'}
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-2 rounded-full border bg-card/80 px-3 py-1.5 text-sm md:hidden"
-            >
-              {menuOpen ? <CloseIcon /> : <MenuIcon />}
-              {current ?? 'Menu'}
-            </button>
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-card/80 md:hidden"
+                  aria-label={current ? `Menu: ${current}` : 'Menu'}
+                >
+                  <MenuIcon />
+                  {current ?? 'Menu'}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 gap-0 p-4 pt-12">
+                <SheetTitle className="sr-only">Menu</SheetTitle>
+                {menu}
+              </SheetContent>
+            </Sheet>
           ) : (
-            <nav aria-label="Portal" className="text-sm">
-              <NavLink
-                to="/login"
-                className="rounded-full border border-lavender/50 px-3 py-1.5 font-display text-xs tracking-wider text-lavender uppercase hover:bg-secondary"
-              >
-                Staff sign in
-              </NavLink>
+            <nav aria-label="Portal">
+              <Button asChild variant="outline" size="sm" className="bg-card/80">
+                <NavLink to="/login">Staff sign in</NavLink>
+              </Button>
             </nav>
           )}
         </div>
       </header>
       <div
         className={cn(
-          'mx-auto max-w-5xl px-4 py-6',
-          who.kind && 'md:grid md:grid-cols-[12rem_minmax(0,1fr)] md:gap-6',
+          'mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8',
+          who.kind && 'md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:gap-8',
         )}
       >
-        {/* Signed in: a menu on phones, a sticky sidebar from md up. */}
+        {/* Signed in: the sections in a sidebar from md up (a sheet on phones). */}
         {who.kind && (
-          <nav
-            id="portal-menu"
-            aria-label="Portal"
-            className={cn(
-              'glass mb-4 flex-col gap-0.5 rounded-lg border p-2 md:sticky md:top-20 md:mb-0 md:flex md:self-start',
-              menuOpen ? 'flex' : 'hidden',
-            )}
-          >
-            {links.map(([to, label]) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-full px-3 py-2 text-sm md:py-1.5',
-                    isActive
-                      ? 'bg-primary font-medium text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-                  )
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
-            <div className="mt-2 border-t pt-2">
-              <Button size="sm" variant="outline" className="w-full" onClick={signOut}>
-                Sign out
-              </Button>
+          <aside className="hidden md:block">
+            <div className="sticky top-20 rounded-xl border bg-card/85 p-2 shadow-sm backdrop-blur-md">
+              {menu}
             </div>
-          </nav>
+          </aside>
         )}
-        <main className="mx-auto grid w-full max-w-3xl min-w-0 gap-4">
+        <main className="mx-auto grid w-full max-w-3xl min-w-0 content-start gap-6">
           <Outlet />
         </main>
       </div>
     </div>
   );
 }
-
-const MenuIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="size-4"
-    aria-hidden
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-  >
-    <path d="M4 6h16M4 12h16M4 18h16" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="size-4"
-    aria-hidden
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-  >
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-);

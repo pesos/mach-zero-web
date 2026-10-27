@@ -4,7 +4,6 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import {
   asParticipant,
-  confirmWith,
   me,
   png,
   poll,
@@ -101,7 +100,9 @@ describe('a member’s page', () => {
   it('lists the team for a member who does not lead it', async () => {
     renderPortal('/me', { session: asParticipant({ linkLastUsedAt: '2026-10-21T10:00:00.000Z' }) });
     const card = (await screen.findByText('Your team')).closest('div')!.parentElement!;
-    expect(await within(card).findByText(/Asha \(leader\) · PX-0001/)).toBeInTheDocument();
+    const asha = (await within(card).findByText('Asha')).closest('li')!;
+    expect(within(asha).getByText('Leader')).toBeInTheDocument();
+    expect(within(asha).getByText('PX-0001')).toBeInTheDocument();
     expect(screen.getByText(/Last opened/)).toBeInTheDocument();
   });
 
@@ -187,7 +188,8 @@ describe('a member’s page', () => {
     await userEvent.click(screen.getByRole('radio', { name: 'Non-veg' }));
     expect(await screen.findByRole('radio', { name: 'Non-veg' })).toBeChecked();
     expect(myVote).toBe('o2');
-    expect(await screen.findByText('1. Byte Club · 18 / 20')).toBeInTheDocument();
+    const board = await screen.findByRole('list', { name: 'Leaderboard' });
+    expect(within(board).getByRole('listitem')).toHaveTextContent(/^1Byte Club18 \/ 20$/);
     expect(session).toBeTruthy();
   });
 
@@ -205,13 +207,13 @@ describe('a member’s page', () => {
         }),
       ),
     );
-    const confirm = confirmWith(false);
     renderPortal('/me', { session });
     const button = await screen.findByRole('button', { name: 'My link leaked: give me a new one' });
     await userEvent.click(button);
+    await userEvent.click(screen.getByRole('button', { name: 'Keep my link' }));
     expect(screen.queryByText(/Your new link/)).not.toBeInTheDocument();
-    confirm.mockReturnValue(true);
     await userEvent.click(button);
+    await userEvent.click(screen.getByRole('button', { name: 'Replace link' }));
     expect(await screen.findByText(/Your new link\. Save it/)).toBeInTheDocument();
     expect(screen.getByText('https://portal.test/me/ek_new')).toBeInTheDocument();
   });
@@ -261,7 +263,6 @@ describe('the team leader’s page', () => {
         return HttpResponse.json({ token: 'ek_ravi2', url: null });
       }),
     );
-    confirmWith(true);
     renderPortal('/me', { session });
     expect(await screen.findByText('You lead this team.')).toBeInTheDocument();
     expect(
@@ -272,6 +273,8 @@ describe('the team leader’s page', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('₹400 for the team.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'New link' }));
+    expect(screen.getByRole('alertdialog', { name: 'Give Ravi a new link?' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Give new link' }));
     expect(await screen.findByText('New link for Ravi: send it to them.')).toBeInTheDocument();
     expect(screen.getByText('ek_ravi2')).toBeInTheDocument();
     expect(asked).toBe('r2');

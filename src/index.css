@@ -1,28 +1,37 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
-/* Mach Zero: a cream sky, lavender haze and chrome type (from the event poster). */
+/* The poster has one (light) look: shadcn's dark: styles apply only under a .dark class,
+   never because of the phone's colour scheme. */
+@custom-variant dark (&:is(.dark *));
+
+/* Mach Zero: a cream sky, lavender haze and chrome type (from the event poster),
+   as shadcn/ui theme tokens. */
 :root {
   --background: #f7efe4; /* the backgrounds' sky */
-  --foreground: #3a3252;
-  --card: #fbf8f3;
-  --card-foreground: #3a3252;
-  --primary: #6f5ca6;
-  --primary-foreground: #fbf8f3;
-  --secondary: #ebe3f3;
-  --secondary-foreground: #4b3f73;
-  --muted: #ece5f0;
-  --muted-foreground: #7a7096;
+  --foreground: #2e2840;
+  --card: #fdfaf6;
+  --card-foreground: #2e2840;
+  --popover: #fdfaf6;
+  --popover-foreground: #2e2840;
+  --primary: #5f4b9c;
+  --primary-foreground: #fdfaf6;
+  --secondary: #ece4f5;
+  --secondary-foreground: #3f3466;
+  --muted: #efe8f2;
+  --muted-foreground: #6e6488;
+  --accent: #ece4f5;
+  --accent-foreground: #3f3466;
   --destructive: #c2410c;
-  --border: #ddd3e7;
+  --success: #15803d;
+  --border: #e2d8eb;
   --input: #d6cae3;
   --ring: #9a87cc;
-  --radius: 0.875rem;
+  --radius: 0.75rem;
 
   /* Poster accents */
-  --lavender: #8e7fbf;
+  --lavender: #7c6cb4;
   --haze: #cdbfe2;
-  --rock: #c4b8d2;
-  --rock-deep: #a797bb;
   --ink: #2e2840;
 }
 
@@ -31,19 +40,25 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --color-lavender: var(--lavender);
   --color-haze: var(--haze);
   --color-ink: var(--ink);
@@ -58,11 +73,6 @@
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
-  }
-  h1,
-  h2,
-  h3 {
-    @apply font-display font-normal tracking-wide;
   }
 }
 
@@ -85,13 +95,5 @@
     color: transparent;
     -webkit-text-stroke: 1px rgb(46 40 64 / 0.55);
     filter: drop-shadow(0 2px 0 rgb(255 255 255 / 0.8)) drop-shadow(0 6px 10px rgb(58 50 82 / 0.28));
-  }
-  /* Cards float over the scene. */
-  .glass {
-    background: color-mix(in srgb, var(--card) 84%, transparent);
-    backdrop-filter: blur(10px);
-    box-shadow:
-      0 1px 0 rgb(255 255 255 / 0.7) inset,
-      0 10px 30px -12px rgb(74 60 120 / 0.25);
   }
 }

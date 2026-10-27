@@ -1,3 +1,4 @@
+import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +16,7 @@ export function CopyButton({ text, label = 'Copy' }: { text: string; label?: str
         )
       }
     >
+      {copied ? <CheckIcon /> : <CopyIcon />}
       {copied ? 'Copied' : label}
     </Button>
   );
