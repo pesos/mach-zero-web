@@ -10,8 +10,7 @@ import {
 } from '@eventkit/sdk';
 import { useEventKit, usePortalInfo, usePortalMutation } from '@eventkit/sdk/react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarClockIcon, CircleCheckIcon, PlusIcon, Trash2Icon } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { CalendarClockIcon, CircleCheckIcon, MailIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import { CopyButton } from '@/components/CopyButton';
@@ -273,16 +272,36 @@ function TeamForm(props: {
 
 type Result = Awaited<ReturnType<ReturnType<typeof useEventKit>['portal']['register']>>;
 
-/** Shown once: every member's ID, QR code and personal link. */
+/**
+ * Shown once: every member's ID and personal link. QR codes wait for the team
+ * to be confirmed, on each member's own page.
+ */
 function Registered({ result }: { result: Result }) {
+  const leader = result.members.find((m) => m.isLeader);
   return (
     <div className="grid gap-6">
+      {leader && (
+        <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
+          <MailIcon className="text-primary" />
+          <AlertTitle className="text-base">Check the team leader's inbox</AlertTitle>
+          <AlertDescription className="text-foreground">
+            <p>
+              We've emailed everyone's participant ID and personal link to{' '}
+              <span className="font-semibold break-all">{leader.email}</span>.
+            </p>
+            <p className="font-medium">
+              Not there in a few minutes? Check the spam or promotions folder.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
       <Alert className="border-success/40">
         <CircleCheckIcon className="text-success" />
         <AlertTitle>{result.team.name} is registered.</AlertTitle>
         <AlertDescription>
           Save this page now (screenshot or copy the links): the personal links are shown only once.
-          Send each member their own link; it lets them check their status, RSVP and vote.
+          Send each member their own link; it lets them check their status, RSVP and vote. Their
+          check-in QR code appears there once the team is confirmed.
         </AlertDescription>
       </Alert>
       {result.members.map((m) => (
@@ -296,11 +315,8 @@ function Registered({ result }: { result: Result }) {
               <span className="font-mono font-semibold text-foreground">{m.participantCode}</span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-start gap-5">
-            <div className="rounded-lg border bg-white p-2">
-              <QRCodeSVG value={m.qrToken} size={128} title={`${m.name}'s check-in QR code`} />
-            </div>
-            <div className="grid min-w-0 flex-1 gap-2 text-sm">
+          <CardContent>
+            <div className="grid min-w-0 gap-2 text-sm">
               <p className="text-muted-foreground">Personal link</p>
               <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs break-all">
                 {m.link.url ?? m.link.token}

@@ -201,7 +201,12 @@ describe('registering a team', () => {
     expect(screen.getByText('https://portal.test/me/ek_a')).toBeInTheDocument();
     // Without a portal URL, the token itself is shown.
     expect(screen.getByText('ek_r')).toBeInTheDocument();
-    expect(screen.getByTitle("Ravi's check-in QR code")).toBeInTheDocument();
+    // The leader is told to look for the email, spam included.
+    expect(screen.getByText("Check the team leader's inbox")).toBeInTheDocument();
+    expect(screen.getByText('asha@example.com')).toBeInTheDocument();
+    expect(screen.getByText(/Check the spam/)).toBeInTheDocument();
+    // QR codes wait for confirmation.
+    expect(screen.queryByTitle(/check-in QR code/)).not.toBeInTheDocument();
   });
 
   it('copies a personal link', async () => {
