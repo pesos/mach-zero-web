@@ -34,6 +34,10 @@ describe('the registration email', () => {
     for (const name of outsideMembers(template)) expect(MEMBER).not.toContain(name);
   });
 
+  it('uses no number variables (eventKit before 0.7.1 failed on them and sent its default)', () => {
+    for (const [, template] of parts) expect(template).not.toContain('memberCount');
+  });
+
   it('carries no QR codes', () => {
     for (const [, template] of parts) {
       expect(template).not.toMatch(/qrToken|cid:/);
@@ -66,7 +70,7 @@ describe('the registration email', () => {
     expect(mail.html).toContain('Byte &lt;Club&gt; is in');
     expect(mail.html).toContain('&lt;b&gt;Ravi&lt;/b&gt;');
     expect(mail.html).not.toContain('<b>Ravi</b>');
-    expect(mail.html).toContain('your team of 3');
+    expect(mail.html).toContain('Hi Asha Rao, your team is registered for MachZero.');
     for (const m of view.members) {
       expect(mail.html).toContain(m.participantCode);
       expect(mail.html).toContain(`href="${m.linkUrl}"`);

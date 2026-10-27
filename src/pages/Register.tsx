@@ -10,7 +10,14 @@ import {
 } from '@eventkit/sdk';
 import { useEventKit, usePortalInfo, usePortalMutation } from '@eventkit/sdk/react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarClockIcon, CircleCheckIcon, MailIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import {
+  CalendarClockIcon,
+  CircleCheckIcon,
+  LoaderCircleIcon,
+  MailIcon,
+  PlusIcon,
+  Trash2Icon,
+} from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import { CopyButton } from '@/components/CopyButton';
@@ -259,10 +266,29 @@ function TeamForm(props: {
           <Button
             type="submit"
             size="lg"
-            className="w-full sm:w-auto"
+            // While sending, stay at full colour with a spinner and a sweep rather than greying out.
+            className={
+              props.submitting
+                ? 'relative w-full cursor-wait overflow-hidden disabled:opacity-100 sm:w-auto'
+                : 'w-full sm:w-auto'
+            }
             disabled={!check.ok || (paysNow && !receipt) || props.submitting}
+            aria-busy={props.submitting}
           >
-            {props.submitting ? 'Registering…' : 'Register team'}
+            {props.submitting && (
+              <span
+                aria-hidden
+                className="absolute inset-0 animate-shimmer bg-linear-to-r from-transparent via-white/30 to-transparent motion-reduce:hidden"
+              />
+            )}
+            {props.submitting ? (
+              <>
+                <LoaderCircleIcon className="animate-spin motion-reduce:animate-none" />
+                Registering…
+              </>
+            ) : (
+              'Register team'
+            )}
           </Button>
         </div>
       </div>

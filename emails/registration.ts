@@ -99,7 +99,7 @@ const html = `<!doctype html>
 ${card(
   `<div style="display:inline-block;padding:4px 12px;border-radius:999px;background:${c.lavender};color:${c.ink};font-size:13px;font-weight:600">&#10003; Registered</div>
 <h1 style="margin:14px 0 6px;font-family:${display};font-size:24px;font-weight:400;line-height:1.25;color:${c.text}">${t.team.name} is in</h1>
-<p style="margin:0 0 10px;font-size:15px;line-height:1.6;color:${c.text}">Hi ${t.leader.name}, your team of ${t.memberCount} is registered for ${t.event.name}.</p>
+<p style="margin:0 0 10px;font-size:15px;line-height:1.6;color:${c.text}">Hi ${t.leader.name}, your team is registered for ${t.event.name}.</p>
 <p style="margin:0;font-size:14px;line-height:1.6;color:${c.soft}">Below is everyone's participant ID and personal dashboard link. Send each member <strong style="color:${c.text}">only their own</strong> link: anyone who has it can open that member's page.</p>`,
   `border-color:${c.haze}`,
 )}

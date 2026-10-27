@@ -91,6 +91,15 @@
   --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Audiowide', 'Space Grotesk', ui-sans-serif, sans-serif;
   --font-chrome: 'Bagel Fat One', 'Audiowide', ui-sans-serif, sans-serif;
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
 }
 
 @layer base {
