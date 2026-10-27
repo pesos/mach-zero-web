@@ -53,6 +53,30 @@ replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
   on the cream sky. Rendered with ImageMagick, e.g.
   `magick logo.png -trim -resize 448x448 -background '#f7efe4' -gravity center -extent 512x512 public/pwa-512.png`.
 
+## Registration email
+
+When a team registers, eventKit emails the leader everyone's participant ID and
+dashboard link. MachZero's version, in the portal's night theme, is
+`emails/registration.ts`, built with the SDK's `registrationEmail` helpers.
+eventKit fills in and escapes the `{{…}}` values when it sends. Buttons are
+links (mail apps run no scripts), and the email has no QR codes: those appear on
+each dashboard once the team is confirmed. Its images are `public/email/*.png`
+on the live site, so deploy before saving.
+
+```bash
+npm run email -- sample    # fill it offline with a made-up team → email-preview.html
+npm run email -- preview   # eventKit fills it, as it will be sent
+npm run email -- test      # send that to the event owner's inbox
+npm run email -- save      # teams get this email from now on
+npm run email -- reset     # back to eventKit's default
+npm run email -- show      # what eventKit has now
+```
+
+Everything but `sample` signs in as the event owner, from `EVENTKIT_API_URL`
+(the API's full address, not `/api`), `EVENTKIT_EVENT_ID`, `EVENTKIT_API_KEY`,
+`EVENTKIT_OWNER_EMAIL` and `EVENTKIT_OWNER_PASSWORD`. The email is only sent when
+the event's **mailing** feature is on and the API has SMTP set up.
+
 ## Deploy
 
 A Vercel project with this folder as its root. Set `VITE_EVENTKIT_API_URL`,

@@ -26,3 +26,6 @@ dist-ssr
 .env
 coverage
 dev-dist
+
+# npm run email -- sample/preview
+email-preview.html

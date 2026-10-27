@@ -35,7 +35,11 @@ export default defineConfig({
           },
         ],
       },
-      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'] },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
+        // Images for the registration email, loaded by mail apps, not the portal.
+        globIgnores: ['**/node_modules/**/*', 'email/**'],
+      },
       devOptions: { enabled: false },
     }),
   ],
