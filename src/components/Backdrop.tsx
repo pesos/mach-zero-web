@@ -3,19 +3,20 @@ import { useTheme } from '@/lib/theme';
 export type Scene = 'base' | 'outpost' | 'plan';
 type Picture = { src: string; focus: string };
 
-const nightCrater: Picture = { src: '/backgrounds/night-base.webp', focus: '62%' };
-
 /**
- * The moon-base scenes behind the portal (public/backgrounds). There is no wide
- * night outpost: the night crater stands in, and portrait phones get a tall one.
+ * The moon-base scenes behind the portal (public/backgrounds), by day and by
+ * night. Portrait phones get a tall night outpost.
  */
 const scenes: Record<Scene, { light: Picture; dark: Picture; darkTall?: string }> = {
   // Astronaut on the crater, centre right.
-  base: { light: { src: '/backgrounds/base.webp', focus: '62%' }, dark: nightCrater },
+  base: {
+    light: { src: '/backgrounds/base.webp', focus: '62%' },
+    dark: { src: '/backgrounds/night-base.webp', focus: '62%' },
+  },
   // Astronaut at the outpost, left.
   outpost: {
     light: { src: '/backgrounds/outpost.webp', focus: '26%' },
-    dark: nightCrater,
+    dark: { src: '/backgrounds/night-outpost.webp', focus: '26%' },
     darkTall: '/backgrounds/night-outpost-tall.webp',
   },
   // Astronaut reading the plan, far left.
