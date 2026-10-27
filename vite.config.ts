@@ -36,7 +36,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
-    // The devkit is linked from ../eventkit-sdk: use this app's single copy of these.
+    // Use this app's single copy of these (they are also peers of @eventkit/sdk).
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
   },
   server: {

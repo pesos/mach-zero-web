@@ -12,8 +12,17 @@ npm install
 npm run dev                  # http://localhost:5176
 ```
 
-The devkit is linked from `../eventkit-sdk` (`file:` dependency); build it there
-first (`npm run build`).
+The SDK comes from `vendor/eventkit-sdk-<version>.tgz`, committed here, because
+`@eventkit/sdk` isn't on npm yet and Vercel only clones this repo. To update it
+after changing the SDK:
+
+```bash
+cd ../eventkit-sdk && npm run build && npm pack --pack-destination ../mach-one-web/vendor
+cd ../mach-one-web && npm install ./vendor/eventkit-sdk-<version>.tgz
+```
+
+Delete the old tarball if the version changed. Once the SDK is published,
+replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
 
 ## Theme
 
