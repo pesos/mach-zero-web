@@ -18,7 +18,10 @@ export function FieldInputs(props: {
     const set = (v: string) => props.onChange({ ...props.value, [f.id]: v });
     const label = `${f.label}${f.required ? '' : ' (optional)'}`;
     return (
-      <div key={f.id} className={cn('grid gap-2', f.type === 'long_text' && 'sm:col-span-2')}>
+      <div
+        key={f.id}
+        className={cn('grid content-start gap-2', f.type === 'long_text' && 'sm:col-span-2')}
+      >
         <Label htmlFor={id}>{label}</Label>
         {f.type === 'choice' ? (
           <NativeSelect id={id} value={value} onChange={(e) => set(e.target.value)}>
@@ -32,7 +35,9 @@ export function FieldInputs(props: {
         ) : (
           <Input
             id={id}
-            type={f.type === 'number' ? 'number' : 'text'}
+            type={f.type === 'phone' ? 'tel' : 'text'}
+            inputMode={f.type === 'number' ? 'decimal' : f.type === 'phone' ? 'tel' : undefined}
+            autoComplete={f.type === 'phone' ? 'tel' : undefined}
             value={value}
             onChange={(e) => set(e.target.value)}
           />

@@ -33,12 +33,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Member = { name: string; email: string; phone: string; answers: Draft };
-const blank = (): Member => ({ name: '', email: '', phone: '', answers: {} });
+type Member = { name: string; email: string; answers: Draft };
+const blank = (): Member => ({ name: '', email: '', answers: {} });
 const CONTACT = [
   ['name', 'Name', 'text', 'name'],
   ['email', 'Email', 'email', 'email'],
-  ['phone', 'Phone', 'tel', 'tel'],
 ] as const;
 
 /** The team leader registers the whole team at once through the registration link. */
@@ -111,7 +110,6 @@ function TeamForm(props: {
       members: members.map((m) => ({
         name: m.name.trim(),
         email: m.email.trim(),
-        phone: m.phone.trim(),
         answers: toAnswers(memberFields(fields), m.answers),
       })),
       ...(receipt ? { receipt } : {}),
@@ -180,7 +178,14 @@ function TeamForm(props: {
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {CONTACT.map(([key, label, type, autoComplete]) => (
-              <div key={key} className={key === 'name' ? 'grid gap-2 sm:col-span-2' : 'grid gap-2'}>
+              <div
+                key={key}
+                className={
+                  key === 'name'
+                    ? 'grid content-start gap-2 sm:col-span-2'
+                    : 'grid content-start gap-2'
+                }
+              >
                 <Label htmlFor={`m${i}-${key}`}>{label}</Label>
                 <Input
                   id={`m${i}-${key}`}
@@ -238,11 +243,11 @@ function TeamForm(props: {
         </Card>
       )}
 
-      <div className="grid gap-4 rounded-xl border bg-card/90 p-6 shadow-sm backdrop-blur-md">
+      <div className="grid gap-4 rounded-xl border bg-card p-6 shadow-md">
         {check.reasons.length > 0 && (
-          <div className="grid gap-1 text-sm">
-            <p className="font-medium">Before you can register</p>
-            <ul className="list-disc pl-5 text-muted-foreground" aria-label="Still needed">
+          <div className="grid gap-2 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            <p className="font-semibold">Before you can register</p>
+            <ul className="grid list-disc gap-1 pl-5" aria-label="Still needed">
               {check.reasons.map((r) => (
                 <li key={r}>{r}</li>
               ))}
@@ -251,14 +256,16 @@ function TeamForm(props: {
           </div>
         )}
         <ErrorText error={props.error} />
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full sm:w-fit"
-          disabled={!check.ok || (paysNow && !receipt) || props.submitting}
-        >
-          {props.submitting ? 'Registering…' : 'Register team'}
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full sm:w-auto"
+            disabled={!check.ok || (paysNow && !receipt) || props.submitting}
+          >
+            {props.submitting ? 'Registering…' : 'Register team'}
+          </Button>
+        </div>
       </div>
     </form>
   );

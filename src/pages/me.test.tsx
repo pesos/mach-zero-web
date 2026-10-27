@@ -218,7 +218,7 @@ describe('a member’s page', () => {
     expect(screen.getByText('https://portal.test/me/ek_new')).toBeInTheDocument();
   });
 
-  it('cancels only after the email or phone is confirmed', async () => {
+  it('cancels only after the email is confirmed', async () => {
     let status: 'registered' | 'cancelled' = 'registered';
     const session = asParticipant();
     server.use(
@@ -240,7 +240,7 @@ describe('a member’s page', () => {
     expect(screen.getByText(/This cancels only your registration\./)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Keep it' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel my registration' }));
-    const input = screen.getByLabelText('Email or phone to confirm');
+    const input = screen.getByLabelText('Email to confirm');
     await userEvent.type(input, 'wrong@example.com');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel registration' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('That is not the email or phone');
@@ -362,10 +362,7 @@ describe('the team leader’s page', () => {
     const submit = screen.getByRole('button', { name: 'Hand over' });
     expect(submit).toBeDisabled();
     await userEvent.selectOptions(select, 'r2');
-    await userEvent.type(
-      screen.getByLabelText('Your email or phone, to confirm'),
-      'asha@example.com',
-    );
+    await userEvent.type(screen.getByLabelText('Your email, to confirm'), 'asha@example.com');
     await userEvent.click(submit);
     expect(await screen.findByRole('alert')).toHaveTextContent('That is not your email or phone.');
     expect(sent).toEqual({ registrationId: 'r2', confirm: 'asha@example.com' });

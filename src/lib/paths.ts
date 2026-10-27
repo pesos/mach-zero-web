@@ -7,4 +7,10 @@ export const routePath = (template: string) => template.replace('{token}', ':tok
 export const basePath = (template: string) =>
   template.split('{token}')[0]!.replace(/\/+$/, '') || '/';
 
+/**
+ * Staff sign in. Not linked from the public pages: the organisers share it with
+ * their volunteers and judges.
+ */
+export const STAFF_LOGIN = '/staff/login';
+
 export type Paths = Schemas['PortalPaths'];

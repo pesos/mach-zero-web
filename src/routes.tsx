@@ -1,5 +1,5 @@
 import { Layout } from '@/components/Layout';
-import { basePath, type Paths, routePath } from '@/lib/paths';
+import { basePath, type Paths, routePath, STAFF_LOGIN } from '@/lib/paths';
 import { Home } from '@/pages/Home';
 import { LazyJudge, LazyScan } from '@/pages/lazy';
 import { Login } from '@/pages/Login';
@@ -22,7 +22,7 @@ export function portalRoutes(paths: Paths) {
         { path: routePath(paths.me), element: <Me /> },
         ...(meBase === '/' ? [] : [{ path: meBase, element: <Me /> }]),
         { path: paths.notifications, element: <Notifications /> },
-        { path: '/login', element: <Login /> },
+        { path: STAFF_LOGIN, element: <Login /> },
         {
           path: '/scan',
           element: <LazyScan />,

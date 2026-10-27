@@ -74,6 +74,15 @@
   body {
     @apply bg-background font-sans text-foreground antialiased;
   }
+  /* No up/down arrows on number inputs: people type scores and numbers. */
+  input[type='number'] {
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
 }
 
 @layer components {

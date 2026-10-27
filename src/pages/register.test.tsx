@@ -86,7 +86,6 @@ async function fillMember(i: number, name: string, dept = 'CSE') {
     document.getElementById(`m${i}-email`)!,
     `${name.toLowerCase()}@example.com`,
   );
-  await userEvent.type(document.getElementById(`m${i}-phone`)!, `+91 98450 0000${i}`);
   await userEvent.selectOptions(document.getElementById(`m${i}-f-dept`)!, dept);
 }
 
@@ -187,13 +186,11 @@ describe('registering a team', () => {
         {
           name: 'Asha',
           email: 'asha@example.com',
-          phone: '+91 98450 00000',
           answers: { 'f-dept': 'CSE' },
         },
         {
           name: 'Ravi',
           email: 'ravi@example.com',
-          phone: '+91 98450 00001',
           answers: { 'f-dept': 'ECE' },
         },
       ],
@@ -223,7 +220,6 @@ describe('registering a team', () => {
     for (const i of [0, 1]) {
       await user.type(document.getElementById(`m${i}-name`)!, `N${i}`);
       await user.type(document.getElementById(`m${i}-email`)!, `n${i}@example.com`);
-      await user.type(document.getElementById(`m${i}-phone`)!, `+91 98450 0000${i}`);
     }
     expect(screen.queryByText(/^Pay /)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Register team' }));
@@ -231,6 +227,23 @@ describe('registering a team', () => {
     await user.click(copy);
     expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe('https://portal.test/me/ek_a');
+  });
+
+  it('asks phone questions with a phone keypad, numbers without spinner arrows', async () => {
+    const phone: Schemas['EventField'] = { ...age, id: 'f-phone', label: 'Phone', type: 'phone' };
+    server.use(
+      regLink,
+      http.get(P, () => HttpResponse.json(portalInfo({ fields: [phone, age] }))),
+    );
+    renderPortal('/register/reg-token');
+    const tel = await screen.findByLabelText('Phone (optional)', { selector: '#m0-f-phone' });
+    expect(tel).toHaveAttribute('type', 'tel');
+    expect(tel).toHaveAttribute('inputmode', 'tel');
+    const number = document.getElementById('m0-f-age')!;
+    expect(number).toHaveAttribute('type', 'text');
+    expect(number).toHaveAttribute('inputmode', 'decimal');
+    // No fixed phone field: name and email are the only built-in details.
+    expect(document.getElementById('m0-phone')).toBeNull();
   });
 
   it('shows the field problems the API listed', async () => {
@@ -252,7 +265,6 @@ describe('registering a team', () => {
     for (const i of [0, 1]) {
       await userEvent.type(document.getElementById(`m${i}-name`)!, `N${i}`);
       await userEvent.type(document.getElementById(`m${i}-email`)!, `n${i}@example.com`);
-      await userEvent.type(document.getElementById(`m${i}-phone`)!, `+91 98450 0000${i}`);
     }
     await userEvent.type(document.getElementById('m0-f-age')!, '20');
     await userEvent.click(screen.getByRole('button', { name: 'Register team' }));

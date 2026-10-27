@@ -114,7 +114,7 @@ describe('staff sign-in', () => {
         return HttpResponse.json(signedIn('judge'));
       }),
     );
-    renderPortal('/login');
+    renderPortal('/staff/login');
     await userEvent.type(await screen.findByLabelText('Email'), 'j@example.com');
     await userEvent.type(screen.getByLabelText('Password'), 'password123');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
@@ -130,7 +130,7 @@ describe('staff sign-in', () => {
         apiError(401, 'INVALID_CREDENTIALS', 'Wrong email or password.'),
       ),
     );
-    renderPortal('/login');
+    renderPortal('/staff/login');
     await userEvent.type(await screen.findByLabelText('Email'), 'j@example.com');
     await userEvent.type(screen.getByLabelText('Password'), 'nope-nope');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
@@ -142,7 +142,7 @@ describe('staff-only pages', () => {
   it('ask anyone else to sign in', async () => {
     renderPortal('/scan');
     expect(await screen.findByText(/This page is for the event's staff\./)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/staff/login');
   });
 
   it("tell staff when their role can't use the page", async () => {

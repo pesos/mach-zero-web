@@ -13,11 +13,9 @@ describe('the event home page', () => {
     expect(screen.getByText(/Teams of 2–3 · ₹200 per person · 42 places left/)).toBeInTheDocument();
     expect(screen.getByText(/Registration is open until/)).toBeInTheDocument();
     expect(screen.getByText(/Registered already\? Open the personal link/)).toBeInTheDocument();
-    const nav = screen.getByRole('navigation', { name: 'Portal' });
-    expect(within(nav).getByRole('link', { name: 'Staff sign in' })).toHaveAttribute(
-      'href',
-      '/login',
-    );
+    // Staff sign in is not offered to visitors: organisers share its address.
+    expect(screen.queryByRole('navigation', { name: 'Portal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /sign in/i })).not.toBeInTheDocument();
   });
 
   it('shows the event days, the about text, highlights and the two-day schedule', async () => {
@@ -68,9 +66,8 @@ describe('the event home page', () => {
     expect(within(nav).getByRole('link', { name: 'Judge' })).toBeInTheDocument();
     await userEvent.click(within(nav).getByRole('button', { name: 'Sign out' }));
     // The portal's settings survive signing out: the page is still there.
-    const visitorNav = await screen.findByRole('navigation', { name: 'Portal' });
-    expect(within(visitorNav).getByRole('link', { name: 'Staff sign in' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'PESOS X Silicon' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'PESOS X Silicon' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Portal' })).not.toBeInTheDocument();
     expect(window.localStorage.getItem('portal.session')).toBeNull();
   });
 

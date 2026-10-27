@@ -37,6 +37,8 @@ replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
   pictures in `public/backgrounds/` (home: `base`, signed-in pages: `outpost`,
   everything else: `plan`). Each has a focus point so phones crop to the
   astronaut.
+- Staff sign in is at `/staff/login` and is not linked from the public pages:
+  share that address with volunteers and judges.
 - Home page: `src/pages/Home.tsx`. The description, highlights, schedule and
   "good to know" notes are in `src/content/event.ts`; everything else (name,
   dates, venue, team size, registration window) comes from the event in the

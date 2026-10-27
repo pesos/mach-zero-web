@@ -102,13 +102,7 @@ export function Layout() {
                 {menu}
               </SheetContent>
             </Sheet>
-          ) : (
-            <nav aria-label="Portal">
-              <Button asChild variant="outline" size="sm" className="bg-card/80">
-                <NavLink to="/login">Staff sign in</NavLink>
-              </Button>
-            </nav>
-          )}
+          ) : null}
         </div>
       </header>
       <div

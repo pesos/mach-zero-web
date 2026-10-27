@@ -21,7 +21,7 @@ describe('notifications', () => {
     expect(
       await screen.findByText(/Open your personal link to see notifications/),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'sign in' })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /sign in/i })).not.toBeInTheDocument();
   });
 
   it('shows a participant their feed', async () => {

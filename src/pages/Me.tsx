@@ -219,11 +219,15 @@ function LeaderTeam() {
                   <StatusBadge status={m.status} />
                 </div>
                 <p className="text-xs break-words text-muted-foreground">
-                  {`${m.email} · ${m.phone} · ${
+                  {[
+                    m.email,
+                    m.phone,
                     m.linkLastUsedAt
                       ? `link last opened ${formatIST(m.linkLastUsedAt)}`
-                      : 'link never opened'
-                  }`}
+                      : 'link never opened',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </p>
               </div>
               {!m.isLeader && (
@@ -345,8 +349,8 @@ function LeaderTeam() {
                   ))}
                 </NativeSelect>
                 <Input
-                  aria-label="Your email or phone, to confirm"
-                  placeholder="Your email or phone"
+                  aria-label="Your email, to confirm"
+                  placeholder="Your email"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                 />
@@ -536,7 +540,7 @@ function CancelCard({ me }: { me: Me }) {
           {me.isLeader
             ? 'You lead the team: this cancels everyone who has not checked in.'
             : 'This cancels only your registration.'}{' '}
-          Type the email or phone number you registered with to confirm.
+          Type the email you registered with to confirm.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -548,7 +552,7 @@ function CancelCard({ me }: { me: Me }) {
           }}
         >
           <Input
-            aria-label="Email or phone to confirm"
+            aria-label="Email to confirm"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
           />

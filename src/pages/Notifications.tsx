@@ -9,7 +9,6 @@ import {
 } from '@eventkit/sdk/react';
 import { BellOffIcon, BellRingIcon, InfoIcon, SendIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { Link } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -32,11 +31,7 @@ export function Notifications() {
     <Alert>
       <InfoIcon />
       <AlertDescription className="block text-foreground">
-        Open your personal link to see notifications, or{' '}
-        <Link className="font-medium text-primary underline underline-offset-4" to="/login">
-          sign in
-        </Link>{' '}
-        if you are staff.
+        Open your personal link to see notifications.
       </AlertDescription>
     </Alert>
   );

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Loading } from '@/components/Loading';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { STAFF_LOGIN } from '@/lib/paths';
 import { useWho } from '@/lib/staff';
 
 /** Shows the page to staff who may use it; others are told where to go. */
@@ -21,7 +22,7 @@ export function StaffOnly({
         <LockIcon />
         <AlertDescription className="block text-foreground">
           This page is for the event's staff.{' '}
-          <Link className="font-medium text-primary underline underline-offset-4" to="/login">
+          <Link className="font-medium text-primary underline underline-offset-4" to={STAFF_LOGIN}>
             Sign in
           </Link>
         </AlertDescription>
