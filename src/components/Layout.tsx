@@ -93,7 +93,12 @@ export function Layout() {
     <div className="relative isolate flex min-h-svh flex-col">
       <Backdrop scene={pathname === '/' ? 'base' : who.kind ? 'outpost' : 'plan'} />
       <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
+        <div
+          className={cn(
+            'mx-auto flex h-14 items-center justify-between gap-3 px-4',
+            who.kind ? 'max-w-5xl md:max-w-none md:px-6' : 'max-w-5xl',
+          )}
+        >
           <Link
             to="/"
             className="flex items-center gap-2 font-display text-lg tracking-wider text-ink"
@@ -135,21 +140,23 @@ export function Layout() {
       </header>
       <div
         className={cn(
-          'mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8',
-          who.kind && 'md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:gap-8',
+          'flex-1',
+          who.kind
+            ? 'md:grid md:grid-cols-[15rem_minmax(0,1fr)]'
+            : 'mx-auto w-full max-w-5xl px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8',
         )}
       >
-        {/* Signed in: the sections in a sidebar from md up (a sheet on phones). */}
+        {/* Signed in: the sections in a full-height sidebar from md up (a sheet on phones). */}
         {who.kind && (
-          <aside className="hidden md:block">
-            <div className="sticky top-20 rounded-xl border bg-card/85 p-2 backdrop-blur-md">
-              {menu}
-            </div>
+          <aside className="hidden border-r border-border/70 bg-card/60 backdrop-blur-md md:block">
+            <div className="sticky top-14 h-[calc(100svh-3.5rem)] overflow-y-auto p-3">{menu}</div>
           </aside>
         )}
-        <main className="mx-auto grid w-full max-w-3xl min-w-0 content-start gap-6">
-          <Outlet />
-        </main>
+        <div className={cn(who.kind && 'px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8 md:px-8')}>
+          <main className="mx-auto grid w-full max-w-3xl min-w-0 content-start gap-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );
