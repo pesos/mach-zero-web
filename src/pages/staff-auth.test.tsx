@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { asStaff } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
-import { apiError, E, P, server, token } from '@/test/server';
+import { API, apiError, E, P, server, token } from '@/test/server';
 
 const staffLink = (role: 'volunteer' | 'judge') =>
   http.get(`${P}/links/:token`, () =>
@@ -148,5 +148,61 @@ describe('staff-only pages', () => {
   it("tell staff when their role can't use the page", async () => {
     renderPortal('/judge', { session: asStaff('volunteer') });
     expect(await screen.findByText("Your role can't use this page.")).toBeInTheDocument();
+  });
+});
+
+describe('changing a password', () => {
+  it('lets a volunteer change theirs from the menu, staying signed in', async () => {
+    const session = asStaff('volunteer');
+    server.use(http.get(`${E}/checkpoints`, () => HttpResponse.json([])));
+    let body: unknown;
+    const fresh = token('staff', 'user-volunteer');
+    server.use(
+      http.post(`${API}/v1/auth/password`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({
+          ...signedIn('volunteer'),
+          token: { accessToken: fresh, tokenType: 'Bearer', expiresIn: '7d' },
+        });
+      }),
+    );
+    renderPortal('/scan', { session });
+    const menu = await screen.findByRole('button', { name: /^Menu/ });
+    await userEvent.click(menu);
+    await userEvent.click(await screen.findByRole('link', { name: 'Change password' }));
+    expect(window.location.pathname).toBe('/password');
+    await userEvent.type(await screen.findByLabelText('Current password'), 'old-password');
+    await userEvent.type(screen.getByLabelText('New password'), 'new-password');
+    await userEvent.type(screen.getByLabelText('Confirm new password'), 'new-passwerd');
+    expect(screen.getByText("The passwords don't match.")).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change password' })).toBeDisabled();
+    await userEvent.clear(screen.getByLabelText('Confirm new password'));
+    await userEvent.type(screen.getByLabelText('Confirm new password'), 'new-password');
+    await userEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    expect(await screen.findByText(/Password changed/)).toBeInTheDocument();
+    expect(body).toEqual({ currentPassword: 'old-password', newPassword: 'new-password' });
+    expect(window.localStorage.getItem('portal.session')).toBe(fresh);
+  });
+
+  it('shows a wrong current password', async () => {
+    const session = asStaff('volunteer');
+    server.use(
+      http.post(`${API}/v1/auth/password`, () =>
+        apiError(400, 'WRONG_PASSWORD', 'Your current password is incorrect.'),
+      ),
+    );
+    renderPortal('/password', { session });
+    await userEvent.type(await screen.findByLabelText('Current password'), 'nope-nope');
+    await userEvent.type(screen.getByLabelText('New password'), 'new-password');
+    await userEvent.type(screen.getByLabelText('Confirm new password'), 'new-password');
+    await userEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your current password is incorrect.',
+    );
+  });
+
+  it('is only for staff', async () => {
+    renderPortal('/password');
+    expect(await screen.findByText(/This page is for the event's staff/)).toBeInTheDocument();
   });
 });

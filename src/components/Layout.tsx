@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   BellIcon,
   GavelIcon,
+  KeyRoundIcon,
   LogOutIcon,
   type LucideIcon,
   MenuIcon,
@@ -64,6 +65,23 @@ export function Layout() {
         </NavLink>
       ))}
       <Separator className="my-2" />
+      {who.kind !== 'participant' && (
+        <NavLink
+          to="/password"
+          onClick={() => setMenuOpen(false)}
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            )
+          }
+        >
+          <KeyRoundIcon className="size-4" />
+          Change password
+        </NavLink>
+      )}
       <Button variant="ghost" className="justify-start gap-3 px-3" onClick={signOut}>
         <LogOutIcon />
         Sign out

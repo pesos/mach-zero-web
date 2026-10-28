@@ -64,6 +64,8 @@ export function team(overrides: Partial<Schemas['Team']> = {}): Schemas['Team'] 
       deadline: null,
       proofs: [],
     },
+    shortlistedBy: null,
+    confirmedBy: null,
     ...overrides,
   };
 }

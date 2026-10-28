@@ -5,6 +5,7 @@ import { LazyJudge, LazyScan } from '@/pages/lazy';
 import { Login } from '@/pages/Login';
 import { Me } from '@/pages/Me';
 import { NotFound } from '@/pages/NotFound';
+import { ChangePassword } from '@/pages/ChangePassword';
 import { Notifications } from '@/pages/Notifications';
 import { Register } from '@/pages/Register';
 import { StaffSignup } from '@/pages/StaffSignup';
@@ -23,6 +24,7 @@ export function portalRoutes(paths: Paths) {
         ...(meBase === '/' ? [] : [{ path: meBase, element: <Me /> }]),
         { path: paths.notifications, element: <Notifications /> },
         { path: STAFF_LOGIN, element: <Login /> },
+        { path: '/password', element: <ChangePassword /> },
         {
           path: '/scan',
           element: <LazyScan />,
