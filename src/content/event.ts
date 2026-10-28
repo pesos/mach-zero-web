@@ -3,8 +3,11 @@
 
 export const tagline = 'A 2 day contribution spree.';
 
-/** Where teams register (the event's registration link). */
-export const registerUrl = 'https://machzero.vercel.app/register/nAcI0_L5zKXkS0odwznrvnv7s5e8gSLy';
+/**
+ * Where teams register: the event's registration link (console → Links), from
+ * VITE_REGISTER_URL. Unset: the Register buttons are hidden.
+ */
+export const registerUrl = (): string | null => import.meta.env.VITE_REGISTER_URL || null;
 
 export const about = [
   'MachZero is a two-day open-source contribution spree where multidisciplinary student teams work on live, community-maintained hardware and software repositories under the guidance of industry mentors.',

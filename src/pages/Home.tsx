@@ -61,7 +61,7 @@ export function Home() {
         </h2>
         <p className="max-w-md text-lg text-balance text-foreground/80">{tagline}</p>
         <RegistrationBadge open={registrationOpen} deadline={event.registrationDeadline} />
-        {registrationOpen && <RegisterButton />}
+        {registrationOpen && registerUrl() && <RegisterButton />}
       </section>
 
       <ul className="grid gap-3 sm:grid-cols-2">
@@ -91,7 +91,7 @@ export function Home() {
                 : `Registration is not open. It runs ${formatIST(event.registrationStart)} – ${formatIST(event.registrationDeadline)}.`}
             </p>
           </div>
-          {registrationOpen && !who.kind && <RegisterButton />}
+          {registrationOpen && !who.kind && registerUrl() && <RegisterButton />}
           {who.kind === 'participant' && (
             <Button asChild size="lg" className="shrink-0">
               <Link to={basePath(paths.me)}>
@@ -187,7 +187,7 @@ function RegistrationBadge({ open, deadline }: { open: boolean; deadline: string
 function RegisterButton() {
   return (
     <Button asChild size="lg" className="shrink-0">
-      <a href={registerUrl} target="_blank" rel="noreferrer">
+      <a href={registerUrl()!} target="_blank" rel="noreferrer">
         Register your team
         <ExternalLinkIcon />
       </a>

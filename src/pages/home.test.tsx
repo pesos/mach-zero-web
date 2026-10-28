@@ -1,24 +1,26 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { asParticipant, asStaff } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, E, P, portalEvent, portalInfo, server } from '@/test/server';
 
 describe('the event home page', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it('describes the event and says how to register while registration is open', async () => {
+    vi.stubEnv('VITE_REGISTER_URL', 'https://portal.test/register/reg-token');
     renderPortal('/');
     expect(await screen.findByRole('heading', { name: 'PESOS X Silicon' })).toBeInTheDocument();
     expect(screen.getByText(/Teams of 2–3 · ₹200 per person · 42 places left/)).toBeInTheDocument();
     expect(screen.getByText(/Registration is open until/)).toBeInTheDocument();
     expect(screen.queryByText(/Registered already/)).not.toBeInTheDocument();
     expect(screen.getByText('Registrations open')).toBeInTheDocument();
-    for (const link of screen.getAllByRole('link', { name: /Register your team/ })) {
-      expect(link).toHaveAttribute(
-        'href',
-        expect.stringContaining('machzero.vercel.app/register/'),
-      );
+    const links = screen.getAllByRole('link', { name: /Register your team/ });
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', 'https://portal.test/register/reg-token');
     }
     expect(screen.getByRole('list', { name: 'Time left to register' })).toHaveTextContent(
       /\d\dd \d\dh/,
@@ -59,6 +61,13 @@ describe('the event home page', () => {
     expect(screen.queryByRole('link', { name: /Register your team/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('list', { name: 'Time left to register' })).not.toBeInTheDocument();
     expect(screen.queryByText(/per person/)).not.toBeInTheDocument();
+  });
+
+  it('hides the Register buttons when no registration link is set', async () => {
+    vi.stubEnv('VITE_REGISTER_URL', '');
+    renderPortal('/');
+    expect(await screen.findByText('Registrations open')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Register your team/ })).not.toBeInTheDocument();
   });
 
   it('links a participant to their registration', async () => {

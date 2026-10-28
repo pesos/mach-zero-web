@@ -80,7 +80,8 @@ the event's **mailing** feature is on and the API has SMTP set up.
 ## Deploy
 
 A Vercel project with this folder as its root. Set `VITE_EVENTKIT_API_URL`,
-`VITE_EVENTKIT_EVENT_ID` and `VITE_EVENTKIT_API_KEY` for the Mach Zero event,
+`VITE_EVENTKIT_EVENT_ID`, `VITE_EVENTKIT_API_KEY` and `VITE_REGISTER_URL` (the
+registration link, for the Register buttons) for the Mach Zero event,
 then put the deployment's URL in the console (event → Portal & settings).
 
 Scripts are the same as the template portal: `npm test`, `npm run lint`,
