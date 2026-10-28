@@ -21,11 +21,20 @@ const scenes: Record<Scene, { src: string; focus: string; tall?: string }> = {
  * Pinned to the bottom of the screen. Wide screens show the full width; on
  * phones the picture keeps a usable height and crops to the astronaut, and the
  * sky colour fills the space above.
+ *
+ * The layer is as tall as the largest viewport (100lvh: browser bars hidden),
+ * not the current one. Phone browsers show and hide their bars while scrolling,
+ * and a layer that followed them lagged behind, leaving a blank strip under the
+ * picture. Sized to lvh it never changes: with the bars showing, its bottom
+ * edge just sits behind them.
  */
 export function Backdrop({ scene }: { scene: Scene }) {
   const { src, focus, tall } = scenes[scene];
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-lvh overflow-hidden"
+    >
       <div className="absolute inset-x-0 bottom-0 h-[min(56.25vw,70svh)] min-h-[46svh]">
         <picture>
           {/* Portrait screens: the tall picture fits the width, so nothing is cropped sideways. */}
