@@ -8,7 +8,9 @@ import {
   type LucideIcon,
   MenuIcon,
   ScanLineIcon,
+  TrophyIcon,
   UserRoundIcon,
+  VoteIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
@@ -17,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { basePath } from '@/lib/paths';
-import { forgetSession, useWho } from '@/lib/staff';
+import { forgetSession, useLeaderboardVisible, useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 
 type Section = { to: string; label: string; icon: LucideIcon };
@@ -26,6 +28,7 @@ export function Layout() {
   const ek = useEventKit();
   const info = usePortalInfo().data!;
   const who = useWho();
+  const showLeaderboard = useLeaderboardVisible();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
@@ -35,8 +38,12 @@ export function Layout() {
     sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
   if (who.canScan) sections.push({ to: '/scan', label: 'Scan', icon: ScanLineIcon });
   if (who.canJudge) sections.push({ to: '/judge', label: 'Judge', icon: GavelIcon });
-  if (who.kind)
+  if (who.kind) {
+    sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
+    if (showLeaderboard)
+      sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
     sections.push({ to: info.paths.notifications, label: 'Notifications', icon: BellIcon });
+  }
   const current = sections.find((s) => s.to === pathname)?.label;
   const signOut = () => {
     setMenuOpen(false);
@@ -126,7 +133,8 @@ export function Layout() {
                     aria-label={current ? `Menu: ${current}` : 'Menu'}
                   >
                     <MenuIcon />
-                    {current ?? 'Menu'}
+                    {/* Icon only on narrow phones, so it clears the organisers' logos. */}
+                    <span className="hidden min-[420px]:inline">{current ?? 'Menu'}</span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-72 gap-0 p-4 pt-12">

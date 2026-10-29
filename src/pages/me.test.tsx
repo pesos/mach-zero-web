@@ -2,16 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import {
-  asParticipant,
-  me,
-  png,
-  poll,
-  proof,
-  team,
-  teamMember,
-  uploadTicket,
-} from '@/test/fixtures';
+import { asParticipant, me, png, proof, team, teamMember, uploadTicket } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, P, portalEvent, portalInfo, server, token } from '@/test/server';
 
@@ -112,85 +103,6 @@ describe('a member’s page', () => {
     expect(
       screen.queryByRole('button', { name: /Cancel my registration/ }),
     ).not.toBeInTheDocument();
-  });
-
-  it('votes in polls and shows the leaderboard when it is public', async () => {
-    let myVote: string | null = null;
-    const session = asParticipant(
-      {},
-      {
-        polls: [
-          poll(),
-          poll({
-            id: 'poll2',
-            question: 'Venue?',
-            closed: true,
-            canVote: false,
-            totalVotes: 3,
-            options: [{ id: 'o3', label: 'Hall', position: 0, votes: 3 }],
-          }),
-          poll({
-            id: 'poll3',
-            question: 'Snacks?',
-            closesAt: '2026-10-31T10:00:00.000Z',
-            options: [],
-          }),
-        ],
-      },
-    );
-    server.use(
-      http.get(P, () =>
-        HttpResponse.json(portalInfo({ event: { ...portalEvent, leaderboardVisible: true } })),
-      ),
-      http.get(`${P}/me/polls`, () =>
-        HttpResponse.json([
-          poll({ myVote }),
-          poll({
-            id: 'poll2',
-            question: 'Venue?',
-            closed: true,
-            canVote: false,
-            totalVotes: 3,
-            options: [{ id: 'o3', label: 'Hall', position: 0, votes: 3 }],
-          }),
-          poll({
-            id: 'poll3',
-            question: 'Snacks?',
-            closesAt: '2026-10-31T10:00:00.000Z',
-            options: [],
-          }),
-        ]),
-      ),
-      http.put(`${P}/me/polls/:pollId/vote`, async ({ request }) => {
-        myVote = ((await request.json()) as { optionId: string }).optionId;
-        return new HttpResponse(null, { status: 204 });
-      }),
-      http.get(`${P}/me/leaderboard`, () =>
-        HttpResponse.json({
-          visibleToEveryone: true,
-          entries: [
-            {
-              rank: 1,
-              team: { id: 't1', name: 'Byte Club' },
-              total: 18,
-              maxTotal: 20,
-              judges: 2,
-              criteria: [],
-            },
-          ],
-        }),
-      ),
-    );
-    renderPortal('/me', { session });
-    expect(await screen.findByText('Venue? (closed)')).toBeInTheDocument();
-    expect(screen.getByText(/Snacks\? · closes/)).toBeInTheDocument();
-    expect(screen.getByText('· 3')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('radio', { name: 'Non-veg' }));
-    expect(await screen.findByRole('radio', { name: 'Non-veg' })).toBeChecked();
-    expect(myVote).toBe('o2');
-    const board = await screen.findByRole('list', { name: 'Leaderboard' });
-    expect(within(board).getByRole('listitem')).toHaveTextContent(/^1Byte Club18 \/ 20$/);
-    expect(session).toBeTruthy();
   });
 
   it('replaces a leaked link', async () => {

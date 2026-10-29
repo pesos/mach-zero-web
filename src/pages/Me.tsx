@@ -8,14 +8,12 @@ import {
 import {
   useEventKit,
   useMe,
-  useMyPolls,
   useMyTeam,
   usePortalInfo,
   usePortalMutation,
   useSecretLink,
 } from '@eventkit/sdk/react';
-import { useQuery } from '@tanstack/react-query';
-import { BellRingIcon, CircleAlertIcon, KeyRoundIcon, LinkIcon, TrophyIcon } from 'lucide-react';
+import { BellRingIcon, CircleAlertIcon, KeyRoundIcon, LinkIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { ConfirmButton } from '@/components/ConfirmButton';
@@ -31,7 +29,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
@@ -68,8 +65,6 @@ export function Me() {
       <Registration me={data} />
       {data.isLeader && <LeaderTeam />}
       {!data.isLeader && <TeamSummary />}
-      <Polls />
-      <Leaderboard />
       <LinkSafety me={data} />
       {data.status !== 'cancelled' && data.status !== 'checked_in' && <CancelCard me={data} />}
     </>
@@ -378,95 +373,6 @@ function NewLink({ title, link }: { title: string; link: Link }) {
         <CopyButton text={text} label="Copy link" />
       </AlertDescription>
     </Alert>
-  );
-}
-
-function Polls() {
-  const polls = useMyPolls();
-  const vote = usePortalMutation((portal, v: { poll: string; option: string }) =>
-    portal.me.polls.vote(v.poll, v.option),
-  );
-  if (!polls.data || polls.data.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Polls</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-6">
-        {polls.data.map((p) => (
-          <div key={p.id} className="grid gap-3 text-sm">
-            <p id={`${p.id}-question`} className="font-medium">
-              {p.question}
-              {p.closed ? ' (closed)' : p.closesAt ? ` · closes ${formatIST(p.closesAt)}` : ''}
-            </p>
-            <RadioGroup
-              aria-labelledby={`${p.id}-question`}
-              value={p.myVote ?? ''}
-              disabled={!p.canVote || vote.isPending}
-              onValueChange={(option) => vote.mutate({ poll: p.id, option })}
-              className="gap-2"
-            >
-              {p.options.map((o) => (
-                <div
-                  key={o.id}
-                  className="flex items-center gap-3 rounded-lg border bg-background/60 px-3 py-2.5 has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-secondary/60"
-                >
-                  <RadioGroupItem id={`${p.id}-${o.id}`} value={o.id} />
-                  <Label htmlFor={`${p.id}-${o.id}`} className="flex-1 font-normal">
-                    {o.label}
-                  </Label>
-                  {p.totalVotes !== null && (
-                    <span className="text-muted-foreground tabular-nums">· {o.votes}</span>
-                  )}
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-        ))}
-        <ErrorText error={vote.error} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function Leaderboard() {
-  const ek = useEventKit();
-  const { event } = usePortalInfo().data!;
-  const board = useQuery({
-    queryKey: ['eventkit', 'portal', 'leaderboard'],
-    queryFn: () => ek.portal.me.leaderboard(),
-    enabled: event.leaderboardVisible,
-  });
-  if (!board.data || board.data.entries.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <TrophyIcon className="size-4 text-primary" />
-          Leaderboard
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ol aria-label="Leaderboard" className="grid divide-y">
-          {board.data.entries.map((e) => (
-            <li key={e.team.id} className="flex items-center gap-3 py-2 text-sm">
-              <span
-                className={cn(
-                  'grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold',
-                  e.rank === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted',
-                )}
-              >
-                {e.rank}
-              </span>
-              <span className="font-medium">{e.team.name}</span>
-              <span className="ml-auto text-muted-foreground tabular-nums">
-                {e.total} / {e.maxTotal}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </CardContent>
-    </Card>
   );
 }
 

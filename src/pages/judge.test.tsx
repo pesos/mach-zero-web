@@ -50,24 +50,61 @@ describe('judging', () => {
     expect(await screen.findByRole('heading', { name: 'Byte Club' })).toBeInTheDocument();
     expect(screen.getByText('Asha, Ravi')).toBeInTheDocument();
     expect(screen.getByText('How good is it')).toBeInTheDocument();
-    const ideaInput = screen.getByLabelText('Idea (0–10)');
-    expect(ideaInput).toHaveValue(6);
+    const idea = screen.getByRole('slider', { name: 'Idea' });
+    expect(idea).toHaveAttribute('aria-valuenow', '6');
     expect(screen.getByLabelText('Comment on Idea')).toHaveValue('Neat');
-    const save = screen.getByRole('button', { name: 'Save scores' });
+    const build = screen.getByRole('slider', { name: 'Build' });
+    expect(build).toHaveAttribute('aria-valuetext', 'Not scored');
+    expect(screen.getByText('1 of 2 not scored yet')).toBeInTheDocument();
 
-    await userEvent.type(screen.getByLabelText('Build (0–5)'), '7');
-    expect(save).toBeDisabled();
-    await userEvent.clear(screen.getByLabelText('Build (0–5)'));
-    await userEvent.type(screen.getByLabelText('Build (0–5)'), '4');
+    // Arrow keys step by one; the numbers under the slider jump straight there.
+    idea.focus();
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+    expect(idea).toHaveAttribute('aria-valuenow', '8');
+    const buildTicks = build.closest('.grid')!.querySelectorAll('button[tabindex="-1"]');
+    expect(buildTicks).toHaveLength(6);
+    await userEvent.click(buildTicks[4]!);
+    expect(build).toHaveAttribute('aria-valuetext', '4 of 5');
+    expect(screen.getByLabelText('Total')).toHaveTextContent('12 / 15');
     await userEvent.clear(screen.getByLabelText('Comment on Idea'));
-    await userEvent.click(save);
-    expect(await screen.findByRole('status')).toHaveTextContent('Saved.');
+    await userEvent.click(screen.getByRole('button', { name: 'Save scores' }));
+    expect(await screen.findByText('Saved.')).toBeInTheDocument();
     expect(sent).toEqual({
       scores: [
-        { criterionId: 'c1', value: 6, comment: null },
+        { criterionId: 'c1', value: 8, comment: null },
         { criterionId: 'c2', value: 4, comment: null },
       ],
     });
+  });
+
+  it('clears a score so it is not saved', async () => {
+    let sent: unknown;
+    judging([
+      {
+        id: 't1',
+        name: 'Byte Club',
+        members: ['Asha'],
+        myScores: [{ criterionId: 'c2', value: 3, comment: null } as Schemas['Score']],
+      },
+    ]);
+    server.use(
+      http.put(`${E}/judging/teams/:teamId/scores`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json([]);
+      }),
+    );
+    renderPortal('/judge', { session: asStaff('judge') });
+    const idea = await screen.findByRole('slider', { name: 'Idea' });
+    idea.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await userEvent.click(screen.getByRole('button', { name: 'Clear Build' }));
+    expect(screen.getByRole('slider', { name: 'Build' })).toHaveAttribute(
+      'aria-valuetext',
+      'Not scored',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save scores' }));
+    await screen.findByText('Saved.');
+    expect(sent).toEqual({ scores: [{ criterionId: 'c1', value: 1, comment: null }] });
   });
 
   it('shows a save that was refused', async () => {
@@ -78,7 +115,10 @@ describe('judging', () => {
       ),
     );
     renderPortal('/judge', { session: asStaff('admin') });
-    await userEvent.type(await screen.findByLabelText('Idea (0–10)'), '5');
+    const idea = await screen.findByRole('slider', { name: 'Idea' });
+    expect(screen.getByRole('button', { name: 'Save scores' })).toBeDisabled();
+    idea.focus();
+    await userEvent.keyboard('{End}');
     await userEvent.click(screen.getByRole('button', { name: 'Save scores' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Judging has closed.');
   });
