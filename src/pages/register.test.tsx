@@ -86,7 +86,9 @@ async function fillMember(i: number, name: string, dept = 'CSE') {
     document.getElementById(`m${i}-email`)!,
     `${name.toLowerCase()}@example.com`,
   );
-  await userEvent.selectOptions(document.getElementById(`m${i}-f-dept`)!, dept);
+  // A short list of options shows as radio buttons.
+  const option = department.options.indexOf(dept);
+  await userEvent.click(document.getElementById(`m${i}-f-dept-${option}`)!);
 }
 
 describe('registering a team', () => {

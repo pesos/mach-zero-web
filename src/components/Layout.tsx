@@ -21,6 +21,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useActivitiesOpen } from '@/lib/event-day';
 import { basePath } from '@/lib/paths';
 import { forgetSession, useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
@@ -35,16 +36,21 @@ export function Layout() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Participants get polls, submissions and the leaderboard from the event day.
+  const day = useActivitiesOpen();
+  const activities = who.kind !== 'participant' || day.open;
   const sections: Section[] = [];
   if (who.kind === 'participant')
     sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
   if (who.canScan) sections.push({ to: '/scan', label: 'Scan', icon: ScanLineIcon });
   if (who.canJudge) sections.push({ to: '/judge', label: 'Judge', icon: GavelIcon });
-  if (who.kind === 'participant' || who.canJudge)
+  if ((who.kind === 'participant' && activities) || who.canJudge)
     sections.push({ to: '/submissions', label: 'Submissions', icon: FileTextIcon });
   if (who.kind) {
-    sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
-    sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
+    if (activities) {
+      sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
+      sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
+    }
     sections.push({ to: info.paths.notifications, label: 'Notifications', icon: BellIcon });
   }
   if (who.kind === 'participant')
@@ -111,22 +117,23 @@ export function Layout() {
             who.kind ? 'max-w-5xl md:max-w-none md:px-6' : 'max-w-5xl',
           )}
         >
+          {/* Shrinks and truncates on phones, so the logos and buttons always fit beside it. */}
           <Link
             to="/"
-            className="flex items-center gap-2 font-display text-lg tracking-wider text-ink"
+            className="flex min-w-0 items-center gap-2 font-display text-base tracking-wider text-ink sm:text-lg"
             onClick={() => setMenuOpen(false)}
           >
-            <img src="/logo.png" alt="" className="size-8" />
-            {info.event.name}
+            <img src="/logo.png" alt="" className="size-7 shrink-0 sm:size-8" />
+            <span className="truncate">{info.event.name}</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {/* The organisers. */}
-            <div className="flex items-center gap-1.5">
-              <img src="/pesos.png" alt="PESOS" className="size-10 object-contain" />
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <img src="/pesos.png" alt="PESOS" className="size-8 object-contain sm:size-10" />
               <span aria-hidden className="text-xs text-muted-foreground">
                 ×
               </span>
-              <img src="/silicon.png" alt="Silicon" className="size-10 object-contain" />
+              <img src="/silicon.png" alt="Silicon" className="size-8 object-contain sm:size-10" />
             </div>
             {who.kind ? <NotificationBell /> : null}
             {who.kind ? (
@@ -139,8 +146,8 @@ export function Layout() {
                     aria-label={current ? `Menu: ${current}` : 'Menu'}
                   >
                     <MenuIcon />
-                    {/* Icon only on narrow phones, so it clears the organisers' logos. */}
-                    <span className="hidden min-[420px]:inline">{current ?? 'Menu'}</span>
+                    {/* Icon only on phones, so it clears the organisers' logos. */}
+                    <span className="hidden sm:inline">{current ?? 'Menu'}</span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-72 gap-0 p-4 pt-12">

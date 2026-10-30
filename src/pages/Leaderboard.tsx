@@ -13,6 +13,8 @@ import { useRoundChoice } from '@/lib/rounds';
 import { ListSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OpensOnEventDay } from '@/components/OpensOnEventDay';
+import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +41,8 @@ export function Leaderboard() {
 
 function ParticipantBoard() {
   const { event } = usePortalInfo().data!;
+  const day = useActivitiesOpen();
+  if (!day.open) return <OpensOnEventDay what="The leaderboard and results" from={day.from} />;
   if (!event.leaderboardVisible) return <NotYet />;
   return <ParticipantRounds />;
 }

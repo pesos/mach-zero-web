@@ -23,6 +23,8 @@ export function me(overrides: Partial<Schemas['Me']> = {}): Schemas['Me'] {
     linkLastUsedAt: null,
     accessEndsAt: '2026-11-08T12:00:00.000Z',
     rsvpEnabled: true,
+    activitiesFrom: '2026-01-01T00:00:00.000Z',
+    activitiesOpen: true,
     ...overrides,
   };
 }

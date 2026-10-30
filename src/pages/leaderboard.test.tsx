@@ -139,3 +139,22 @@ describe('leaderboard', () => {
     await waitFor(() => expect(asked).toContain('rd1'));
   });
 });
+
+describe('before the event day', () => {
+  it('tells participants when it opens', async () => {
+    const session = asParticipant();
+    server.use(
+      http.get(P, () =>
+        HttpResponse.json(
+          portalInfo({ event: { ...portalEvent, activitiesFrom: '2099-01-01T00:00:00.000Z' } }),
+        ),
+      ),
+    );
+    renderPortal('/leaderboard', { session });
+    expect(
+      await screen.findByRole('heading', {
+        name: 'The leaderboard and results open on the day of the event',
+      }),
+    ).toBeInTheDocument();
+  });
+});

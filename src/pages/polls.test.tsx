@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { asParticipant, asStaff, poll } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
-import { E, P, server } from '@/test/server';
+import { E, P, portalEvent, portalInfo, server } from '@/test/server';
 
 const venue = poll({
   id: 'poll2',
@@ -85,5 +85,22 @@ describe('polls', () => {
     server.use(http.get(`${E}/polls`, () => HttpResponse.json([])));
     renderPortal('/polls', { session: asStaff('judge') });
     expect(await screen.findByText('No polls right now.')).toBeInTheDocument();
+  });
+});
+
+describe('before the event day', () => {
+  it('tells participants when it opens', async () => {
+    const session = asParticipant();
+    server.use(
+      http.get(P, () =>
+        HttpResponse.json(
+          portalInfo({ event: { ...portalEvent, activitiesFrom: '2099-01-01T00:00:00.000Z' } }),
+        ),
+      ),
+    );
+    renderPortal('/polls', { session });
+    expect(
+      await screen.findByRole('heading', { name: 'Polls open on the day of the event' }),
+    ).toBeInTheDocument();
   });
 });

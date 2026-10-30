@@ -35,6 +35,8 @@ export const portalEvent: Schemas['PortalInfo']['event'] = {
   paymentInstructions: null,
   leaderboardVisible: false,
   rsvpEnabled: true,
+  // Already open, so tests see polls, submissions and the leaderboard.
+  activitiesFrom: '2026-01-01T00:00:00.000Z',
 };
 
 export function portalInfo(overrides: Partial<Schemas['PortalInfo']> = {}): Schemas['PortalInfo'] {

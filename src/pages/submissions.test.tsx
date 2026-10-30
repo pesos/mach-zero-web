@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { asParticipant, asStaff } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
-import { apiError, E, P, server } from '@/test/server';
+import { apiError, E, P, portalEvent, portalInfo, server } from '@/test/server';
 
 const field = (over: Partial<Schemas['PortalSubmission']['fields'][number]> = {}) => ({
   id: 'f1',
@@ -28,6 +28,7 @@ const submission = (
   title: 'Project',
   description: 'Hand in your repo',
   position: 0,
+  deadline: null,
   fields: [field()],
   open: true,
   entry: null,
@@ -60,6 +61,7 @@ describe('a participant’s submissions', () => {
           team: { id: 't1', name: 'Byte Club' },
           answers: { f1: 'old' },
           submittedBy: null,
+          late: false,
           createdAt: '2026-10-20T10:00:00.000Z',
           updatedAt: '2026-10-20T10:00:00.000Z',
         },
@@ -89,6 +91,81 @@ describe('a participant’s submissions', () => {
     await userEvent.click(within(round1).getByRole('button', { name: 'Save' }));
     expect(await within(round1).findByText('Saved.')).toBeInTheDocument();
     expect(sent).toEqual({ id: 's1', answers: { f1: 'https://git.test/x' } });
+  });
+
+  it('takes checkbox, multiple-choice and date-time answers, and shows the deadline', async () => {
+    const session = asParticipant();
+    let sent: unknown;
+    mine([
+      submission({
+        deadline: '2026-01-02T12:30:00.000Z',
+        fields: [
+          field({ id: 'stack', label: 'Stack', type: 'multi_choice', options: ['React', 'Go'] }),
+          field({
+            id: 'track',
+            label: 'Track',
+            help: 'Pick the closest one',
+            type: 'choice',
+            options: ['AI', 'Web'],
+          }),
+          field({ id: 'demo', label: 'Demo at', type: 'datetime', required: false }),
+        ],
+        entry: {
+          id: 'e1',
+          submissionId: 's1',
+          team: { id: 't1', name: 'Byte Club' },
+          answers: { stack: ['Go'] },
+          submittedBy: { registrationId: 'r1', name: 'Asha' },
+          late: true,
+          createdAt: '2026-01-02T12:00:00.000Z',
+          updatedAt: '2026-01-02T13:00:00.000Z',
+        },
+      }),
+    ]);
+    server.use(
+      http.put(`${P}/me/submissions/:id/entry`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json({});
+      }),
+    );
+    renderPortal('/submissions', { session });
+    expect(await screen.findByText(/Deadline passed 2 Jan 2026, 6:00 pm IST/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/you can still submit, but it will be marked late/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Late')).toBeInTheDocument();
+    expect(screen.getByText(/last saved 2 Jan 2026, 6:30 pm IST by Asha/)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Go' })).toBeChecked();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'React' }));
+    expect(screen.getByRole('group', { name: 'Track' })).toHaveAccessibleDescription(
+      'Pick the closest one',
+    );
+    await userEvent.click(screen.getByRole('radio', { name: 'Web' }));
+    await userEvent.type(screen.getByLabelText('Demo at (optional)'), '2026-10-31T15:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Saved.')).toBeInTheDocument();
+    expect(sent).toEqual({
+      answers: { stack: ['Go', 'React'], track: 'Web', demo: '2026-10-31T15:00+05:30' },
+    });
+  });
+
+  it('waits for the event day', async () => {
+    const session = asParticipant();
+    server.use(
+      http.get(P, () =>
+        HttpResponse.json(
+          portalInfo({ event: { ...portalEvent, activitiesFrom: '2099-01-01T00:00:00.000Z' } }),
+        ),
+      ),
+    );
+    renderPortal('/submissions', { session });
+    expect(
+      await screen.findByRole('heading', { name: 'Submissions open on the day of the event' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Come back on 1 Jan 2099.')).toBeInTheDocument();
+    for (const name of ['Submissions', 'Polls', 'Leaderboard']) {
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
+    }
   });
 
   it('is read-only with a note once the round is closed', async () => {

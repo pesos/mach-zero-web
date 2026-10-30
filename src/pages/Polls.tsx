@@ -11,6 +11,8 @@ import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OpensOnEventDay } from '@/components/OpensOnEventDay';
+import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +35,12 @@ export function Polls() {
 }
 
 function ParticipantPolls() {
+  const day = useActivitiesOpen();
+  if (!day.open) return <OpensOnEventDay what="Polls" from={day.from} />;
+  return <ParticipantPollList />;
+}
+
+function ParticipantPollList() {
   const polls = useMyPolls();
   const vote = usePortalMutation((portal, v: Vote) => portal.me.polls.vote(v.poll, v.option));
   return <PollList polls={polls.data} error={polls.error ?? vote.error} vote={vote} />;
