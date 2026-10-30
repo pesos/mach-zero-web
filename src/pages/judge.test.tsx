@@ -1,14 +1,15 @@
 import type { Schemas } from '@eventkit/sdk';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { asStaff } from '@/test/fixtures';
+import { asStaff, round } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, E, server } from '@/test/server';
 
 const idea: Schemas['Criterion'] = {
   id: 'c1',
+  roundId: 'rd1',
   name: 'Idea',
   description: 'How good is it',
   maxScore: 10,
@@ -16,15 +17,21 @@ const idea: Schemas['Criterion'] = {
 };
 const build: Schemas['Criterion'] = {
   id: 'c2',
+  roundId: 'rd1',
   name: 'Build',
   description: '',
   maxScore: 5,
   position: 1,
 };
 
+const asked: { criteria: string | null; scores?: string | null } = { criteria: null };
+
 function judging(teams: Schemas['JudgingTeam'][], criteria = [idea, build]) {
   server.use(
-    http.get(`${E}/criteria`, () => HttpResponse.json(criteria)),
+    http.get(`${E}/criteria`, ({ request }) => {
+      asked.criteria = new URL(request.url).searchParams.get('roundId');
+      return HttpResponse.json(criteria);
+    }),
     http.get(`${E}/judging/teams`, () => HttpResponse.json(teams)),
   );
 }
@@ -43,6 +50,7 @@ describe('judging', () => {
     server.use(
       http.put(`${E}/judging/teams/:teamId/scores`, async ({ request }) => {
         sent = await request.json();
+        asked.scores = new URL(request.url).searchParams.get('roundId');
         return HttpResponse.json([]);
       }),
     );
@@ -75,6 +83,39 @@ describe('judging', () => {
         { criterionId: 'c2', value: 4, comment: null },
       ],
     });
+    expect(asked).toMatchObject({ criteria: 'rd1', scores: 'rd1' });
+  });
+
+  it('lets an admin pick a round, defaulting to the latest released one', async () => {
+    const seen: (string | null)[] = [];
+    const session = asStaff('admin');
+    server.use(
+      http.get(`${E}/rounds`, () =>
+        HttpResponse.json([
+          round({ id: 'rd1', name: 'Round 1', phase: 'released' }),
+          round({ id: 'rd2', name: 'Round 2', phase: 'released', position: 1 }),
+          round({ id: 'rd3', name: 'Round 3', phase: 'draft', position: 2 }),
+        ]),
+      ),
+      http.get(`${E}/criteria`, ({ request }) => {
+        seen.push(new URL(request.url).searchParams.get('roundId'));
+        return HttpResponse.json([idea]);
+      }),
+      http.get(`${E}/judging/teams`, () => HttpResponse.json([])),
+    );
+    renderPortal('/judge', { session });
+    const picker = await screen.findByLabelText('Round');
+    expect(picker).toHaveValue('rd2');
+    await userEvent.selectOptions(picker, 'rd1');
+    await waitFor(() => expect(seen).toContain('rd1'));
+    expect(seen[0]).toBe('rd2');
+  });
+
+  it('says so when there are no rounds', async () => {
+    const session = asStaff('judge');
+    server.use(http.get(`${E}/rounds`, () => HttpResponse.json([])));
+    renderPortal('/judge', { session });
+    expect(await screen.findByText(/not set up a round/)).toBeInTheDocument();
   });
 
   it('clears a score so it is not saved', async () => {

@@ -6,6 +6,7 @@
   "description": "Mach Zero event portal, built on @eventkit/sdk",
   "scripts": {
     "dev": "vite",
+    "prebuild": "tsx scripts/prebuild.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
@@ -27,6 +28,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router": "^8.5.0",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
     "workbox-precaching": "^7.4.1",
     "workbox-routing": "^7.4.1"

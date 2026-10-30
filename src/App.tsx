@@ -1,10 +1,13 @@
 import type { EventKit } from '@eventkit/sdk';
 import { EventKitProvider, usePortalInfo } from '@eventkit/sdk/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { WifiOffIcon } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router';
-import { ErrorText } from '@/components/ErrorText';
-import { Loading } from '@/components/Loading';
+import { ErrorPage } from '@/components/ErrorPage';
+import { CardSkeleton } from '@/components/Skeletons';
+import { Toaster } from '@/components/ui/sonner';
+import { errorText } from '@/lib/eventkit';
 import { portalRoutes } from '@/routes';
 
 export function Providers({ ek, children }: { ek: EventKit; children: ReactNode }) {
@@ -25,17 +28,26 @@ export function App() {
   const router = useMemo(() => (paths ? createBrowserRouter(portalRoutes(paths)) : null), [paths]);
   if (info.isError) {
     return (
-      <main className="mx-auto max-w-xl p-4">
-        <ErrorText error={info.error} />
-      </main>
+      <ErrorPage
+        icon={WifiOffIcon}
+        title="Could not load the event"
+        action={{ label: 'Try again', onClick: () => void info.refetch() }}
+      >
+        {errorText(info.error)}
+      </ErrorPage>
     );
   }
   if (!router) {
     return (
-      <div className="grid min-h-svh place-items-center">
-        <Loading />
+      <div className="mx-auto min-h-dvh w-full max-w-xl p-4 pt-20">
+        <CardSkeleton label="Loading the event" />
       </div>
     );
   }
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Toaster position="top-center" />
+    </>
+  );
 }

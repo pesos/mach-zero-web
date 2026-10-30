@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { errorText } from '@/lib/eventkit';
 
 /** An API error as people read it, with the field problems the API listed. */
-export function ErrorText({ error }: { error: unknown }) {
+export function ErrorText({ error, message }: { error: unknown; message?: string }) {
   if (!error) return null;
   const details =
     isEventKitError(error) && Array.isArray(error.details)
@@ -14,7 +14,7 @@ export function ErrorText({ error }: { error: unknown }) {
     <Alert variant="destructive" className="border-destructive/40">
       <CircleAlertIcon />
       <AlertDescription>
-        <p>{errorText(error)}</p>
+        <p>{message ?? errorText(error)}</p>
         {details.length > 0 && (
           <ul className="list-disc pl-5">
             {details.map((d) => (

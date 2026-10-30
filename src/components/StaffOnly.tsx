@@ -1,7 +1,7 @@
 import { LockIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { Loading } from '@/components/Loading';
+import { CardSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { STAFF_LOGIN } from '@/lib/paths';
 import { useWho } from '@/lib/staff';
@@ -15,7 +15,7 @@ export function StaffOnly({
   children: ReactNode;
 }) {
   const who = useWho();
-  if (who.loading) return <Loading />;
+  if (who.loading) return <CardSkeleton />;
   if (!who.kind || who.kind === 'participant') {
     return (
       <Alert>

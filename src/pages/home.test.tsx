@@ -115,7 +115,22 @@ describe('the event home page', () => {
   it('shows the error when the portal cannot load', async () => {
     server.use(http.get(P, () => apiError(401, 'INVALID_API_KEY', 'This API key is not valid.')));
     renderPortal('/');
-    expect(await screen.findByRole('alert')).toHaveTextContent('This API key is not valid.');
+    const page = await screen.findByRole('alert');
+    expect(page).toHaveTextContent('Could not load the event');
+    expect(page).toHaveTextContent('This API key is not valid.');
+    server.use(http.get(P, () => HttpResponse.json(portalInfo())));
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('heading', { name: 'PESOS X Silicon' })).toBeInTheDocument();
+  });
+
+  it('shows an error page when a page breaks, and offers a retry', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const session = asParticipant();
+    server.use(http.get(`${P}/me`, () => HttpResponse.json({})));
+    renderPortal('/me', { session });
+    const page = await screen.findByRole('alert');
+    expect(within(page).getByRole('heading', { name: 'Something went wrong' })).toBeInTheDocument();
+    expect(within(page).getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('serves the pages on custom paths set in the console', async () => {
@@ -137,7 +152,10 @@ describe('the event home page', () => {
 
   it('has a not-found page', async () => {
     renderPortal('/nowhere');
-    expect(await screen.findByText('This page does not exist.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Back to the event' })).toHaveAttribute('href', '/');
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
+    expect(screen.getByText('This page does not exist.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Back to the event' }));
+    expect(await screen.findByRole('heading', { name: 'PESOS X Silicon' })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/');
   });
 });

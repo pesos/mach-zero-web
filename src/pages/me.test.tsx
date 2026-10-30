@@ -1,8 +1,8 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
-import { asParticipant, me, png, proof, team, teamMember, uploadTicket } from '@/test/fixtures';
+import { describe, expect, it, vi } from 'vitest';
+import { asParticipant, me, png, proof, team, uploadTicket } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, P, portalEvent, portalInfo, server, token } from '@/test/server';
 
@@ -34,18 +34,40 @@ describe('opening a personal link', () => {
   });
 
   it.each([
-    ['LINK_NOT_FOUND', 404, /it was replaced with a new one/],
-    ['ACCESS_EXPIRED', 410, /Access for this event has ended\./],
-    ['INTERNAL', 500, /Could not open your link\./],
-  ])('explains a link that fails with %s', async (code, status, text) => {
+    ['LINK_NOT_FOUND', 404, 'This link does not work any more', /It was replaced with a new one/],
+    ['ACCESS_EXPIRED', 410, 'Access has ended', /Access for this event has ended\./],
+    ['INTERNAL', 500, 'Could not open your link', /Check your connection and try again\./],
+  ])('explains a link that fails with %s', async (code, status, title, text) => {
     server.use(http.post(`${P}/access`, () => apiError(status, code, 'No.')));
     renderPortal('/me/ek_old');
-    expect(await screen.findByRole('alert')).toHaveTextContent(text);
+    const page = await screen.findByRole('alert');
+    expect(within(page).getByRole('heading', { name: title })).toBeInTheDocument();
+    expect(page).toHaveTextContent(text);
+  });
+
+  it('offers a way out of a dead link, and to try again', async () => {
+    server.use(http.post(`${P}/access`, () => apiError(404, 'LINK_NOT_FOUND', 'No.')));
+    renderPortal('/me/ek_old');
+    expect(await screen.findByRole('link', { name: 'Go home' })).toHaveAttribute('href', '/');
+  });
+
+  it('reloads to try a link again after a network failure', async () => {
+    const reload = vi.fn();
+    const real = window.location;
+    vi.spyOn(window, 'location', 'get').mockReturnValue(
+      new Proxy({} as Location, {
+        get: (_, k) => (k === 'reload' ? reload : Reflect.get(real, k)),
+      }),
+    );
+    server.use(http.post(`${P}/access`, () => apiError(500, 'INTERNAL', 'No.')));
+    renderPortal('/me/ek_old');
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    expect(reload).toHaveBeenCalled();
   });
 
   it('needs a link when nobody is signed in', async () => {
     renderPortal('/me');
-    expect(await screen.findByRole('alert')).toHaveTextContent(/it was replaced with a new one/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/It was replaced with a new one/);
   });
 
   it('shows an error loading the registration', async () => {
@@ -80,6 +102,22 @@ describe('a member’s page', () => {
     expect(await screen.findByRole('button', { name: 'I will attend' })).toBeInTheDocument();
   });
 
+  it('hides the RSVP buttons when RSVPs are off', async () => {
+    renderPortal('/me', {
+      session: asParticipant({ status: 'confirmed', rsvpEnabled: false }),
+    });
+    expect(await screen.findByTitle('Your check-in QR code')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'I will attend' })).not.toBeInTheDocument();
+  });
+
+  it('explains an RSVP the event has switched off', async () => {
+    const session = asParticipant({ status: 'confirmed' });
+    server.use(http.post(`${P}/me/rsvp`, () => apiError(409, 'RSVP_DISABLED', 'Off.')));
+    renderPortal('/me', { session });
+    await userEvent.click(await screen.findByRole('button', { name: 'I will attend' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('RSVPs are off for this event');
+  });
+
   it('shows an RSVP refusal', async () => {
     const session = asParticipant({ status: 'confirmed' });
     server.use(http.post(`${P}/me/rsvp`, () => apiError(409, 'EVENT_FULL', 'The event is full.')));
@@ -88,13 +126,25 @@ describe('a member’s page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('The event is full.');
   });
 
-  it('lists the team for a member who does not lead it', async () => {
-    renderPortal('/me', { session: asParticipant({ linkLastUsedAt: '2026-10-21T10:00:00.000Z' }) });
-    const card = (await screen.findByText('Your team')).closest('div')!.parentElement!;
-    const asha = (await within(card).findByText('Asha')).closest('li')!;
+  it('lists the team, with its status, above the member’s own card', async () => {
+    renderPortal('/me', { session: asParticipant() });
+    const asha = (await screen.findByText('PX-0001', { selector: 'li span' })).closest('li')!;
     expect(within(asha).getByText('Leader')).toBeInTheDocument();
-    expect(within(asha).getByText('PX-0001')).toBeInTheDocument();
-    expect(screen.getByText(/Last opened/)).toBeInTheDocument();
+    const card = asha.closest<HTMLElement>('[data-slot="card"]')!;
+    expect(within(card).getByText('Registered')).toBeInTheDocument();
+    expect(card).toHaveTextContent(/^Team Byte Club/);
+    // Team first, then the member's own registration, then cancel.
+    const order = [
+      card,
+      screen.getByText(/Participant ID/).closest('[data-slot="card"]')!,
+      screen.getByRole('button', { name: 'Cancel my registration' }),
+    ];
+    expect(
+      order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('says a cancelled registration is cancelled and offers no cancel', async () => {
@@ -103,31 +153,6 @@ describe('a member’s page', () => {
     expect(
       screen.queryByRole('button', { name: /Cancel my registration/ }),
     ).not.toBeInTheDocument();
-  });
-
-  it('replaces a leaked link', async () => {
-    const session = asParticipant();
-    server.use(
-      http.post(`${P}/me/access/reset`, () =>
-        HttpResponse.json({
-          link: { token: 'ek_new', url: 'https://portal.test/me/ek_new' },
-          session: {
-            accessToken: token('participant', 'r1'),
-            tokenType: 'Bearer',
-            expiresIn: '14d',
-          },
-        }),
-      ),
-    );
-    renderPortal('/me', { session });
-    const button = await screen.findByRole('button', { name: 'My link leaked: give me a new one' });
-    await userEvent.click(button);
-    await userEvent.click(screen.getByRole('button', { name: 'Keep my link' }));
-    expect(screen.queryByText(/Your new link/)).not.toBeInTheDocument();
-    await userEvent.click(button);
-    await userEvent.click(screen.getByRole('button', { name: 'Replace link' }));
-    expect(await screen.findByText(/Your new link\. Save it/)).toBeInTheDocument();
-    expect(screen.getByText('https://portal.test/me/ek_new')).toBeInTheDocument();
   });
 
   it('cancels only after the email is confirmed', async () => {
@@ -166,13 +191,13 @@ describe('a member’s page', () => {
 describe('the team leader’s page', () => {
   const leader = { isLeader: true };
 
-  it('shows contacts and link activity, and gives a member a new link', async () => {
+  it('shows contacts and link activity, and emails a member a new link', async () => {
     let asked = '';
     const session = asParticipant(leader);
     server.use(
       http.post(`${P}/me/team/members/:registrationId/reissue-link`, ({ params }) => {
         asked = String(params.registrationId);
-        return HttpResponse.json({ token: 'ek_ravi2', url: null });
+        return HttpResponse.json({ sent: true });
       }),
     );
     renderPortal('/me', { session });
@@ -185,14 +210,33 @@ describe('the team leader’s page', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('₹400 for the team.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'New link' }));
-    expect(screen.getByRole('alertdialog', { name: 'Give Ravi a new link?' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Give new link' }));
-    expect(await screen.findByText('New link for Ravi: send it to them.')).toBeInTheDocument();
-    expect(screen.getByText('ek_ravi2')).toBeInTheDocument();
+    const dialog = screen.getByRole('alertdialog', { name: 'Make a new link for Ravi?' });
+    expect(dialog).toHaveTextContent(
+      "Their old link stops working. The new link is emailed to them; you won't see it.",
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Make new link' }));
+    expect(await screen.findByText('New link emailed to Ravi')).toBeInTheDocument();
     expect(asked).toBe('r2');
     expect(
       screen.getByRole('button', { name: 'Cancel the team’s registration' }),
     ).toBeInTheDocument();
+  });
+
+  it.each([
+    ['MAILING_OFF', 'Email is off for this event; ask an organiser to send a new link'],
+    ['MAIL_FAILED', 'The email could not be sent'],
+  ])('explains a new link that fails with %s', async (code, text) => {
+    const session = asParticipant(leader);
+    server.use(
+      http.post(`${P}/me/team/members/:registrationId/reissue-link`, () =>
+        apiError(409, code, 'Nope.'),
+      ),
+    );
+    renderPortal('/me', { session });
+    await userEvent.click(await screen.findByRole('button', { name: 'New link' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Make new link' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(text);
+    expect(screen.queryByText(/New link emailed/)).not.toBeInTheDocument();
   });
 
   it('uploads a new receipt after a rejection', async () => {
@@ -247,37 +291,6 @@ describe('the team leader’s page', () => {
     renderPortal('/me', { session });
     await userEvent.upload(await screen.findByLabelText('Upload the payment receipt'), png());
     expect(await screen.findByRole('alert')).toHaveTextContent('Payments are closed.');
-  });
-
-  it('hands the team to another member', async () => {
-    let sent: unknown;
-    const session = asParticipant(leader, {
-      team: team({
-        payment: { mode: 'none', amountDue: null, currency: null, deadline: null, proofs: [] },
-        members: [
-          teamMember('r1', 'Asha', { isLeader: true }),
-          teamMember('r2', 'Ravi'),
-          teamMember('r3', 'Gone', { status: 'cancelled' }),
-        ],
-      }),
-    });
-    server.use(
-      http.post(`${P}/me/team/leader`, async ({ request }) => {
-        sent = await request.json();
-        return apiError(403, 'CONFIRMATION_MISMATCH', 'That is not your email or phone.');
-      }),
-    );
-    renderPortal('/me', { session });
-    const select = await screen.findByRole('combobox', { name: 'New leader' });
-    expect(screen.queryByText('Payment')).not.toBeInTheDocument();
-    expect(within(select).queryByRole('option', { name: 'Gone' })).not.toBeInTheDocument();
-    const submit = screen.getByRole('button', { name: 'Hand over' });
-    expect(submit).toBeDisabled();
-    await userEvent.selectOptions(select, 'r2');
-    await userEvent.type(screen.getByLabelText('Your email, to confirm'), 'asha@example.com');
-    await userEvent.click(submit);
-    expect(await screen.findByRole('alert')).toHaveTextContent('That is not your email or phone.');
-    expect(sent).toEqual({ registrationId: 'r2', confirm: 'asha@example.com' });
   });
 
   it('shows an error loading the team', async () => {

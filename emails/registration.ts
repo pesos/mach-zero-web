@@ -1,4 +1,4 @@
-// The email eventKit sends the team leader once a team registers, in the
+// The email eventKit sends each member (separately) once a team registers, in the
 // portal's night theme. eventKit fills the {{…}} variables and escapes them;
 // save it with `npm run email -- save` (see README). Mail apps run no scripts,
 // so every button is a link. No images, web fonts or hidden text: spam filters
@@ -25,9 +25,6 @@ const display =
 const card = (body: string, extra = '') =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.card}" style="background:${c.card};border:1px solid ${c.border};border-radius:14px;${extra}"><tr><td style="padding:22px 24px">${body}</td></tr></table>`;
 
-const gap = (px: number) =>
-  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:${px}px;line-height:${px}px;font-size:0">&nbsp;</td></tr></table>`;
-
 const label = (text: string) =>
   `<div style="font-size:12px;color:${c.soft};margin:0 0 2px">${text}</div>`;
 
@@ -36,20 +33,9 @@ const fact = (name: string, value: string, side: 'left' | 'right') =>
 
 const leaderBadge = `<span style="display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;background:${c.lavender};color:${c.ink};font-size:11px;font-weight:600;vertical-align:2px">Leader</span>`;
 
-const member = t.eachMember(
+const memberRow = t.eachMember(
   (m) =>
-    gap(10) +
-    card(
-      `<div style="font-size:17px;font-weight:600;color:${c.text}">${m.name}${t.when(m.isLeader, leaderBadge)}</div>
-<div style="margin-top:6px;font-size:13px;color:${c.soft}">Participant ID <span style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:14px;font-weight:700;color:${c.text};letter-spacing:0.5px">${m.participantCode}</span></div>
-${t.when(
-  m.dashboardUrl,
-  `<div style="margin-top:14px">${t.button({ href: m.dashboardUrl, label: 'Open dashboard', background: c.lavender, color: c.ink, radius: '10px' })}</div>`,
-)}${t.unless(
-        m.dashboardUrl,
-        `<div style="margin-top:10px;font-size:13px;color:${c.soft}">Ask the organisers for this member's dashboard link.</div>`,
-      )}`,
-    ),
+    `<div style="padding:6px 0;font-size:14px;color:${c.text}">${m.name}${t.when(m.isLeader, leaderBadge)}</div>`,
 );
 
 const html = `<!doctype html>
@@ -59,7 +45,7 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <meta name="supported-color-schemes" content="dark">
-<title>${t.team.name} is registered for ${t.event.name}</title>
+<title>${t.event.name} (${t.event.hostedBy})</title>
 <style>
   body { margin: 0; padding: 0; }
   a { color: ${c.lavender}; }
@@ -85,8 +71,17 @@ const html = `<!doctype html>
 ${card(
   `<div style="display:inline-block;padding:4px 12px;border-radius:999px;background:${c.lavender};color:${c.ink};font-size:13px;font-weight:600">&#10003; Registered</div>
 <h1 style="margin:14px 0 6px;font-family:${display};font-size:24px;font-weight:400;line-height:1.25;color:${c.text}">${t.team.name} is in</h1>
-<p style="margin:0 0 10px;font-size:15px;line-height:1.6;color:${c.text}">Hi ${t.leader.name}, your team is registered for ${t.event.name}.</p>
-<p style="margin:0;font-size:14px;line-height:1.6;color:${c.soft}">Below is everyone's participant ID and personal dashboard link. Send each member <strong style="color:${c.text}">only their own</strong> link: anyone who has it can open that member's page.</p>`,
+<p style="margin:0 0 10px;font-size:15px;line-height:1.6;color:${c.text}">Hi ${t.member.name}, you're registered for ${t.event.name}.</p>
+${t.when(t.linkReplaced, `<p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:${c.soft}">This is a new link for you: the old one has stopped working.</p>`)}
+<div style="margin:14px 0 0;font-size:13px;color:${c.soft}">Your participant ID <span style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:16px;font-weight:700;color:${c.text};letter-spacing:0.5px">${t.member.participantCode}</span></div>
+${t.when(
+  t.links.dashboard,
+  `<div style="margin-top:16px">${t.button({ href: t.links.dashboard, label: 'Open my pass', background: c.lavender, color: c.ink, radius: '10px' })}</div>
+<p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:${c.soft}">This link is yours alone: anyone who has it can open your page.</p>`,
+)}${t.unless(
+    t.links.dashboard,
+    `<p style="margin:12px 0 0;font-size:13px;color:${c.soft}">Ask the organisers for your dashboard link.</p>`,
+  )}`,
   `border-color:${c.haze}`,
 )}
 </td></tr>
@@ -99,14 +94,14 @@ ${card(
 </td></tr>
 
 <tr><td style="padding-top:22px">
-  <div style="font-family:${display};font-size:18px;color:${c.text}">Your team</div>
-  ${member}
+  <div style="font-family:${display};font-size:18px;color:${c.text};padding-bottom:6px">Team ${t.team.name}</div>
+  ${memberRow}
 </td></tr>
 
 <tr><td style="padding-top:22px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.muted}" style="background:${c.muted};border-radius:12px"><tr><td style="padding:16px 18px;font-size:14px;line-height:1.6;color:${c.text}">
     <strong>Check-in QR codes</strong><br>
-    <span style="color:${c.soft}">Each member's QR code appears on their dashboard once your team is confirmed. Show it at the entry and checkpoints, or say your participant ID.</span>
+    <span style="color:${c.soft}">Your QR code appears on your dashboard once your team is confirmed. Show it at the entry and checkpoints, or say your participant ID.</span>
   </td></tr></table>
 </td></tr>
 
@@ -117,7 +112,7 @@ ${t.when(
 
 <tr><td align="center" style="padding-top:28px;font-size:12px;line-height:1.6;color:${c.soft}">
   ${t.event.name} · ${t.event.venue}<br>
-  You're getting this because you registered a team for ${t.event.name}.
+  You're getting this because you're on a team registered for ${t.event.name}.
 </td></tr>
 
 </table>
@@ -127,24 +122,22 @@ ${t.when(
 </html>
 `;
 
-const text = `Hi ${t.leader.name},
+const text = `Hi ${t.member.name},
 
-${t.team.name} is registered for ${t.event.name}: ${t.event.when}, ${t.event.venue}.
+You're registered for ${t.event.name}, hosted by ${t.event.hostedBy}: ${t.event.when}, ${t.event.venue}.
+${t.when(t.linkReplaced, '\nThis is a new link for you: the old one has stopped working.\n')}
+Your participant ID: ${t.member.participantCode}
+${t.when(t.links.dashboard, `Your pass: ${t.links.dashboard}\nThis link is yours alone: anyone who has it can open your page.`)}${t.unless(t.links.dashboard, 'Your dashboard link: ask the organisers')}
 
-Below is everyone's participant ID and personal dashboard link. Send each member only their own link: anyone who has it can open that member's page.
-
-${t.eachMember(
-  (m) => `${m.name}${t.when(m.isLeader, ' (leader)')} · ${m.participantCode}
-  ${t.when(m.dashboardUrl, m.dashboardUrl)}${t.unless(m.dashboardUrl, 'Dashboard link: ask the organisers')}
-
-`,
-)}Each member's check-in QR code appears on their dashboard once your team is confirmed.
+Team ${t.team.name}:
+${t.eachMember((m) => `- ${m.name}${t.when(m.isLeader, ' (leader)')}\n`)}
+Your check-in QR code appears on your dashboard once your team is confirmed.
 ${t.when(t.links.portal, `\n${t.links.portal}\n`)}
 PESOS x SILICON presents ${t.event.name}.
 `;
 
 export const registrationDraft = {
-  subject: `${t.event.name}: ${t.team.name} is registered`,
+  subject: `${t.event.name} (${t.event.hostedBy})`,
   html,
   text,
 };

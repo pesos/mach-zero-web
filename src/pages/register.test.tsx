@@ -74,7 +74,7 @@ const registered: Schemas['TeamRegistered'] = {
       participantCode: 'PX-0002',
       qrToken: 'qr-2',
       isLeader: false,
-      link: { token: 'ek_r', url: null },
+      link: null,
     },
   ],
   payment: { mode: 'at_registration', amountDue: 40000, currency: 'INR', proof: null },
@@ -199,11 +199,11 @@ describe('registering a team', () => {
     expect(screen.getByText('PX-0001')).toBeInTheDocument();
     expect(screen.getByText('Leader')).toBeInTheDocument();
     expect(screen.getByText('https://portal.test/me/ek_a')).toBeInTheDocument();
-    // Without a portal URL, the token itself is shown.
-    expect(screen.getByText('ek_r')).toBeInTheDocument();
-    // The leader is told to look for the email, spam included.
-    expect(screen.getByText("Check the team leader's inbox")).toBeInTheDocument();
-    expect(screen.getByText('asha@example.com')).toBeInTheDocument();
+    // Members' own links are never shown: they get them by email.
+    expect(screen.queryByText('Ravi')).not.toBeInTheDocument();
+    expect(screen.getByText('Each member gets their own link by email')).toBeInTheDocument();
+    expect(screen.getByText('Your personal link')).toBeInTheDocument();
+    expect(screen.queryByText('PX-0002')).not.toBeInTheDocument();
     expect(screen.getByText(/Check the spam/)).toBeInTheDocument();
     // QR codes wait for confirmation.
     expect(screen.queryByTitle(/check-in QR code/)).not.toBeInTheDocument();
@@ -228,7 +228,7 @@ describe('registering a team', () => {
     }
     expect(screen.queryByText(/^Pay /)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Register team' }));
-    const copy = (await screen.findAllByRole('button', { name: 'Copy link' }))[0]!;
+    const copy = await screen.findByRole('button', { name: 'Copy link' });
     await user.click(copy);
     expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe('https://portal.test/me/ek_a');

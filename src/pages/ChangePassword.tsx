@@ -3,7 +3,7 @@ import { CircleCheckIcon, LockIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { Link } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
-import { Loading } from '@/components/Loading';
+import { FormSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,7 @@ export function ChangePassword() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  if (who.loading) return <Loading />;
+  if (who.loading) return <FormSkeleton />;
   if (!who.kind || who.kind === 'participant') {
     return (
       <Alert>

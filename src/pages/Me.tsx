@@ -6,34 +6,31 @@ import {
   teamDisplayStatus,
 } from '@eventkit/sdk';
 import {
-  useEventKit,
   useMe,
   useMyTeam,
   usePortalInfo,
   usePortalMutation,
   useSecretLink,
 } from '@eventkit/sdk/react';
-import { BellRingIcon, CircleAlertIcon, KeyRoundIcon, LinkIcon } from 'lucide-react';
+import { ClockIcon, LinkIcon, WifiOffIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { ConfirmButton } from '@/components/ConfirmButton';
-import { CopyButton } from '@/components/CopyButton';
 import { ErrorText } from '@/components/ErrorText';
-import { Loading } from '@/components/Loading';
+import { ErrorPage } from '@/components/ErrorPage';
 import { PaymentInstructions } from '@/components/PaymentInstructions';
+import { ListSkeleton, MeSkeleton } from '@/components/Skeletons';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Separator } from '@/components/ui/separator';
+import { hasCode } from '@/lib/eventkit';
 import { cn } from '@/lib/utils';
 
 type Me = Schemas['Me'];
-type Link = { token: string; url: string | null };
 
 /** A participant's page, opened through their personal link. */
 export function Me() {
@@ -42,30 +39,42 @@ export function Me() {
   const me = useMe();
   if (link.status === 'error') {
     const err = link.error;
+    if (isEventKitError(err, 'LINK_NOT_FOUND')) {
+      return (
+        <ErrorPage
+          icon={LinkIcon}
+          title="This link does not work any more"
+          action={{ label: 'Go home', to: '/' }}
+        >
+          It was replaced with a new one. Use your newest link, or ask your team leader or the
+          organisers for one.
+        </ErrorPage>
+      );
+    }
+    if (isEventKitError(err, 'ACCESS_EXPIRED')) {
+      return (
+        <ErrorPage icon={ClockIcon} title="Access has ended" action={{ label: 'Go home', to: '/' }}>
+          Access for this event has ended.
+        </ErrorPage>
+      );
+    }
     return (
-      <Alert variant="destructive" className="border-destructive/40">
-        <CircleAlertIcon />
-        <AlertDescription>
-          {isEventKitError(err, 'LINK_NOT_FOUND')
-            ? 'This link does not work any more: it was replaced with a new one. Use your newest link, or ask your team leader or the organisers for one.'
-            : isEventKitError(err, 'ACCESS_EXPIRED')
-              ? 'Access for this event has ended.'
-              : 'Could not open your link. Check your connection and try again.'}
-        </AlertDescription>
-      </Alert>
+      <ErrorPage
+        icon={WifiOffIcon}
+        title="Could not open your link"
+        action={{ label: 'Try again', onClick: () => window.location.reload() }}
+      >
+        Check your connection and try again.
+      </ErrorPage>
     );
   }
-  if (link.status === 'opening' || me.isPending) {
-    return <Loading>Opening your registration…</Loading>;
-  }
+  if (link.status === 'opening' || me.isPending) return <MeSkeleton />;
   if (me.isError) return <ErrorText error={me.error} />;
   const data = me.data;
   return (
     <>
+      {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
       <Registration me={data} />
-      {data.isLeader && <LeaderTeam />}
-      {!data.isLeader && <TeamSummary />}
-      <LinkSafety me={data} />
       {data.status !== 'cancelled' && data.status !== 'checked_in' && <CancelCard me={data} />}
     </>
   );
@@ -105,7 +114,7 @@ function Registration({ me }: { me: Me }) {
               : 'Your QR code appears here once your team is confirmed.'}
           </p>
         )}
-        {me.status === 'confirmed' && (
+        {me.rsvpEnabled && me.status === 'confirmed' && (
           <Button
             size="lg"
             className="w-full sm:w-fit"
@@ -115,7 +124,7 @@ function Registration({ me }: { me: Me }) {
             I will attend
           </Button>
         )}
-        {me.status === 'attending' && (
+        {me.rsvpEnabled && me.status === 'attending' && (
           <Button
             variant="outline"
             className="w-full sm:w-fit"
@@ -125,7 +134,14 @@ function Registration({ me }: { me: Me }) {
             I can't attend after all
           </Button>
         )}
-        <ErrorText error={rsvp.error ?? unrsvp.error} />
+        <ErrorText
+          error={rsvp.error ?? unrsvp.error}
+          message={
+            hasCode(rsvp.error ?? unrsvp.error, 'RSVP_DISABLED')
+              ? 'RSVPs are off for this event. You can just turn up.'
+              : undefined
+          }
+        />
       </CardContent>
     </Card>
   );
@@ -133,11 +149,14 @@ function Registration({ me }: { me: Me }) {
 
 function TeamSummary() {
   const team = useMyTeam();
+  if (team.isPending) return <ListSkeleton label="Loading your team" />;
   if (!team.data) return null;
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Your team</CardTitle>
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+          Team {team.data.name} <StatusBadge status={teamDisplayStatus(team.data)} />
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="grid divide-y">
@@ -168,18 +187,13 @@ function Initial({ name }: { name: string }) {
   );
 }
 
-/** The leader's view: contacts, link activity, payment, new links, hand over. */
+/** The leader's view: contacts, link activity, payment, new links. */
 function LeaderTeam() {
   const team = useMyTeam();
-  const [issued, setIssued] = useState<(Link & { name: string }) | null>(null);
+  const [emailed, setEmailed] = useState<string | null>(null);
   const reissue = usePortalMutation((portal, id: string) => portal.me.team.reissueMemberLink(id));
   const pay = usePortalMutation((portal, file: File) => portal.me.team.payReceipt(file));
-  const [to, setTo] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const handOver = usePortalMutation((portal, v: { to: string; confirm: string }) =>
-    portal.me.team.handOver(v.to, v.confirm),
-  );
-  if (team.isPending) return null;
+  if (team.isPending) return <ListSkeleton label="Loading your team" />;
   if (team.isError) return <ErrorText error={team.error} />;
   const t = team.data;
   const status = teamDisplayStatus(t);
@@ -190,7 +204,6 @@ function LeaderTeam() {
     latest !== 'pending' &&
     latest !== 'approved' &&
     (t.payment.mode === 'at_registration' || t.status === 'shortlisted');
-  const others = t.members.filter((m) => !m.isLeader && m.status !== 'cancelled');
 
   return (
     <Card>
@@ -229,14 +242,16 @@ function LeaderTeam() {
                 <ConfirmButton
                   size="sm"
                   variant="outline"
-                  title={`Give ${m.name} a new link?`}
-                  description="Their current personal link stops working straight away."
-                  confirm="Give new link"
-                  onConfirm={() =>
+                  title={`Make a new link for ${m.name}?`}
+                  description="Their old link stops working. The new link is emailed to them; you won't see it."
+                  confirm="Make new link"
+                  disabled={reissue.isPending}
+                  onConfirm={() => {
+                    setEmailed(null);
                     reissue.mutate(m.registrationId, {
-                      onSuccess: (link) => setIssued({ name: m.name, ...link }),
-                    })
-                  }
+                      onSuccess: () => setEmailed(m.name),
+                    });
+                  }}
                 >
                   New link
                 </ConfirmButton>
@@ -244,10 +259,21 @@ function LeaderTeam() {
             </li>
           ))}
         </ul>
-        {issued && (
-          <NewLink title={`New link for ${issued.name}: send it to them.`} link={issued} />
+        {emailed && (
+          <p role="status" className="text-sm text-success">
+            New link emailed to {emailed}
+          </p>
         )}
-        <ErrorText error={reissue.error} />
+        <ErrorText
+          error={reissue.error}
+          message={
+            hasCode(reissue.error, 'MAILING_OFF')
+              ? 'Email is off for this event; ask an organiser to send a new link'
+              : hasCode(reissue.error, 'MAIL_FAILED')
+                ? 'The email could not be sent. Try again in a moment, or ask an organiser.'
+                : undefined
+          }
+        />
 
         {t.payment.mode !== 'none' && (
           <>
@@ -313,109 +339,6 @@ function LeaderTeam() {
             </div>
           </>
         )}
-
-        {others.length > 0 && (
-          <>
-            <Separator />
-            <form
-              className="grid gap-3 text-sm"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handOver.mutate({ to, confirm });
-              }}
-            >
-              <div className="grid gap-1">
-                <h3 className="font-semibold">Hand the team to someone else</h3>
-                <p className="text-muted-foreground">
-                  The new leader manages the team from their own link.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <NativeSelect
-                  aria-label="New leader"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                >
-                  <NativeSelectOption value="">Choose a member…</NativeSelectOption>
-                  {others.map((m) => (
-                    <NativeSelectOption key={m.registrationId} value={m.registrationId}>
-                      {m.name}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-                <Input
-                  aria-label="Your email, to confirm"
-                  placeholder="Your email"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                />
-              </div>
-              <ErrorText error={handOver.error} />
-              <Button type="submit" variant="outline" className="w-fit" disabled={!to || !confirm}>
-                Hand over
-              </Button>
-            </form>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function NewLink({ title, link }: { title: string; link: Link }) {
-  const text = link.url ?? link.token;
-  return (
-    <Alert className="border-primary/30 bg-secondary/60">
-      <LinkIcon />
-      <AlertDescription className="text-foreground">
-        <p className="font-medium">{title}</p>
-        <p className="w-full rounded-md bg-card px-3 py-2 font-mono text-xs break-all">{text}</p>
-        <CopyButton text={text} label="Copy link" />
-      </AlertDescription>
-    </Alert>
-  );
-}
-
-/** When the link was last used, how long it lasts, and replacing it if it leaked. */
-function LinkSafety({ me }: { me: Me }) {
-  const ek = useEventKit();
-  const reset = usePortalMutation((portal) => portal.me.resetLink());
-  const push = usePortalMutation(() => ek.portal.me.push.enable());
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <KeyRoundIcon className="size-4 text-primary" />
-          Your personal link
-        </CardTitle>
-        <CardDescription>
-          Anyone with your link can see this page. It works until {formatIST(me.accessEndsAt)}.
-          {me.linkLastUsedAt && ` Last opened ${formatIST(me.linkLastUsedAt)}.`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <div className="flex flex-wrap gap-2">
-          <ConfirmButton
-            variant="outline"
-            title="Replace your link?"
-            description="The old link stops working on every device. Your new one appears here."
-            confirm="Replace link"
-            cancel="Keep my link"
-            onConfirm={() => reset.mutate(undefined)}
-          >
-            My link leaked: give me a new one
-          </ConfirmButton>
-          {ek.portal.me.push.isSupported() && (
-            <Button variant="outline" onClick={() => push.mutate(undefined)}>
-              <BellRingIcon />
-              {push.isSuccess ? 'Urgent alerts on' : 'Get urgent alerts on this device'}
-            </Button>
-          )}
-        </div>
-        {reset.data && (
-          <NewLink title="Your new link. Save it: the old one no longer works." link={reset.data} />
-        )}
-        <ErrorText error={reset.error ?? push.error} />
       </CardContent>
     </Card>
   );

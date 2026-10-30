@@ -12,6 +12,7 @@ const LABEL: Record<DisplayStatus, string> = {
   confirmation_pending: 'Confirmation pending',
 };
 const TONE: Partial<Record<DisplayStatus, string>> = {
+  registered: 'bg-violet-100 text-violet-900 dark:bg-violet-900/60 dark:text-violet-100',
   confirmed: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100',
   attending: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100',
   checked_in: 'bg-success text-white',

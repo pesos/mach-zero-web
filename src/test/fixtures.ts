@@ -22,6 +22,7 @@ export function me(overrides: Partial<Schemas['Me']> = {}): Schemas['Me'] {
     cancelledAt: null,
     linkLastUsedAt: null,
     accessEndsAt: '2026-11-08T12:00:00.000Z',
+    rsvpEnabled: true,
     ...overrides,
   };
 }
@@ -125,6 +126,18 @@ export function notification(
   };
 }
 
+export function round(overrides: Partial<Schemas['Round']> = {}): Schemas['Round'] {
+  return {
+    id: 'rd1',
+    name: 'Round 1',
+    position: 0,
+    phase: 'released',
+    createdAt: T0,
+    updatedAt: T0,
+    ...overrides,
+  };
+}
+
 export const uploadTicket = (key: string) => ({
   key,
   url: `${BUCKET}/${key}?signed=put`,
@@ -146,6 +159,7 @@ export function asParticipant(
     http.get(`${P}/me/team`, () => HttpResponse.json(extra.team ?? team())),
     http.get(`${P}/me/polls`, () => HttpResponse.json(extra.polls ?? [])),
     http.get(`${P}/me/notifications`, () => HttpResponse.json([])),
+    http.get(`${P}/me/submissions`, () => HttpResponse.json([])),
   );
   return token('participant', m.registrationId ?? 'r1');
 }
@@ -154,6 +168,7 @@ export function asParticipant(
 export function asStaff(role: 'admin' | 'volunteer' | 'judge'): string {
   server.use(
     http.get(E, () => HttpResponse.json({ event: { ...portalInfo().event, id: EVENT_ID }, role })),
+    http.get(`${E}/rounds`, () => HttpResponse.json([round()])),
   );
   return token(role === 'admin' ? 'client' : 'staff', `user-${role}`);
 }

@@ -23,7 +23,7 @@ export const portalEvent: Schemas['PortalInfo']['event'] = {
   startAt: '2026-10-31T03:30:00.000Z',
   endAt: '2026-11-01T12:00:00.000Z',
   registrationStart: '2026-10-01T00:00:00.000Z',
-  registrationDeadline: '2026-10-30T00:00:00.000Z',
+  registrationDeadline: '2099-10-30T00:00:00.000Z',
   minTeamSize: 2,
   maxTeamSize: 3,
   placesLeft: 42,
@@ -34,6 +34,7 @@ export const portalEvent: Schemas['PortalInfo']['event'] = {
   paymentDeadline: null,
   paymentInstructions: null,
   leaderboardVisible: false,
+  rsvpEnabled: true,
 };
 
 export function portalInfo(overrides: Partial<Schemas['PortalInfo']> = {}): Schemas['PortalInfo'] {

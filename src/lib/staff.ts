@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { useEventQuery, usePortalInfo, useSession } from '@eventkit/sdk/react';
+import { useEventQuery, useSession } from '@eventkit/sdk/react';
 
 /**
  * The signed-in person's place on the portal: a participant (personal link),
@@ -18,16 +18,6 @@ export function useWho() {
     canScan: role === 'admin' || role === 'volunteer',
     canJudge: role === 'admin' || role === 'judge',
   };
-}
-
-/**
- * Whether the signed-in person may see the leaderboard now (for the menu):
- * admins and judges always, everyone else once the organisers share it.
- */
-export function useLeaderboardVisible() {
-  const who = useWho();
-  const { event } = usePortalInfo().data!;
-  return who.canJudge || (who.kind !== null && event.leaderboardVisible);
 }
 
 /** Where staff go after signing in. */

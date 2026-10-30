@@ -7,7 +7,7 @@ import {
 } from '@eventkit/sdk/react';
 import { CheckIcon, InfoIcon, VoteIcon } from 'lucide-react';
 import { ErrorText } from '@/components/ErrorText';
-import { Loading } from '@/components/Loading';
+import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,7 +54,7 @@ function PollList({
   error: unknown;
   vote: { mutate: (v: Vote) => void; isPending: boolean; variables?: Vote };
 }) {
-  if (!polls && !error) return <Loading />;
+  if (!polls && !error) return <CardsSkeleton label="Loading polls" />;
   // Open polls you can still vote in first, then the rest.
   const sorted = [...(polls ?? [])].sort(
     (a, b) => Number(!a.canVote || a.closed) - Number(!b.canVote || b.closed),

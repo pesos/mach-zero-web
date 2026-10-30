@@ -55,8 +55,9 @@ replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
 
 ## Registration email
 
-When a team registers, eventKit emails the leader everyone's participant ID and
-dashboard link. MachZero's version, in the portal's night theme, is
+When a team registers, eventKit emails each member separately: their own
+participant ID, a button to their own dashboard (the pass), the team name and
+the member names (never anyone else's link). A replaced link is mailed the same way. MachZero's version, in the portal's night theme, is
 `emails/registration.ts`, built with the SDK's `registrationEmail` helpers.
 eventKit fills in and escapes the `{{…}}` values when it sends. Buttons are
 links (mail apps run no scripts), and the email has no QR codes: those appear on
@@ -76,6 +77,9 @@ Everything but `sample` signs in as the event owner, from `EVENTKIT_API_URL`
 (the API's full address, not `/api`), `EVENTKIT_EVENT_ID`, `EVENTKIT_API_KEY`,
 `EVENTKIT_OWNER_EMAIL` and `EVENTKIT_OWNER_PASSWORD`. The email is only sent when
 the event's **mailing** feature is on and the API has SMTP set up.
+
+`npm run build` runs `prebuild` first, which saves the template (`email -- save`)
+only when all five variables above are set, and otherwise prints a skip notice.
 
 ## Deploy
 

@@ -4,7 +4,7 @@ import { registrationDraft } from './registration.ts';
 import { renderSample, sampleView } from './sample.ts';
 
 const parts = Object.entries(registrationDraft);
-const MEMBER = ['name', 'email', 'participantCode', 'isLeader', 'linkUrl'];
+const MEMBER = ['name', 'email', 'participantCode', 'isLeader'];
 
 /** Every variable used outside {{#members}}…{{/members}}. */
 function outsideMembers(template: string): string[] {
@@ -58,37 +58,55 @@ describe('the registration email', () => {
     );
   });
 
-  it("fills in every member's ID and dashboard button, and escapes names", () => {
+  it('greets the recipient with their own ID and dashboard button, and escapes names', () => {
     const view = {
       ...sampleView,
       team: { name: 'Byte <Club>' },
+      member: { ...sampleView.member, name: '<b>Ravi</b>' },
       members: sampleView.members.map((m, i) => (i === 1 ? { ...m, name: '<b>Ravi</b>' } : m)),
     };
     const mail = renderSample(registrationDraft, view);
-    expect(mail.subject).toBe('MachZero: Byte <Club> is registered');
+    expect(mail.subject).toBe('MachZero (PESOS X Silicon)');
     expect(mail.html).toContain('Byte &lt;Club&gt; is in');
-    expect(mail.html).toContain('&lt;b&gt;Ravi&lt;/b&gt;');
+    expect(mail.html).toContain('Hi &lt;b&gt;Ravi&lt;/b&gt;');
     expect(mail.html).not.toContain('<b>Ravi</b>');
-    expect(mail.html).toContain('Hi Asha Rao, your team is registered for MachZero.');
-    for (const m of view.members) {
-      expect(mail.html).toContain(m.participantCode);
-      expect(mail.html).toContain(`href="${m.linkUrl}"`);
-      expect(mail.text).toContain(m.linkUrl);
-    }
-    expect(mail.html.match(/>Leader</g)).toHaveLength(1);
-    expect(mail.text).toContain('Asha Rao (leader) · MZ-0001');
+    expect(mail.html).toContain(view.member.participantCode);
+    expect(mail.html).toContain(`href="${view.member.linkUrl}"`);
+    expect(mail.text).toContain(`Your pass: ${view.member.linkUrl}`);
+    expect(mail.text).toContain('Your participant ID: MZ-0002');
   });
 
-  it('says to ask the organisers when there are no dashboard links', () => {
+  it("lists the team's member names without anyone else's link", () => {
+    const mail = renderSample(registrationDraft);
+    for (const m of sampleView.members) {
+      expect(mail.html).toContain(m.name);
+      expect(mail.text).toContain(`- ${m.name}`);
+    }
+    expect(mail.html.match(/>Leader</g)).toHaveLength(1);
+    expect(mail.text).toContain('- Asha Rao (leader)');
+    expect(mail.html).not.toContain('ek_asha');
+    expect(mail.text).not.toContain('ek_meera');
+  });
+
+  it('says a link was replaced only when it was', () => {
+    const plain = renderSample(registrationDraft);
+    expect(plain.html).not.toContain('old one has stopped working');
+    expect(plain.text).not.toContain('old one has stopped working');
+    const again = renderSample(registrationDraft, { ...sampleView, linkReplaced: true });
+    expect(again.html).toContain('old one has stopped working');
+    expect(again.text).toContain('old one has stopped working');
+  });
+
+  it('says to ask the organisers when there is no dashboard link', () => {
     const view = {
       ...sampleView,
       event: { ...sampleView.event, portalUrl: '' },
-      members: sampleView.members.map((m) => ({ ...m, linkUrl: '' })),
+      member: { ...sampleView.member, linkUrl: '' },
     };
     const mail = renderSample(registrationDraft, view);
-    expect(mail.html).not.toContain('Open dashboard');
+    expect(mail.html).not.toContain('Open my pass');
     expect(mail.html).not.toContain('Visit the MachZero site');
     expect(mail.html).toContain('Ask the organisers');
-    expect(mail.text).toContain('Dashboard link: ask the organisers');
+    expect(mail.text).toContain('ask the organisers');
   });
 });

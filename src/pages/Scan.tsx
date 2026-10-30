@@ -115,7 +115,8 @@ function Scanning({ checkpointId }: { checkpointId: string }) {
     if (code) void submit(code);
     setTyped('');
   };
-  const accepted = result?.result === 'accepted';
+  const notRsvpd = result?.reason === 'not_attending';
+  const accepted = result?.result === 'accepted' || notRsvpd;
 
   return (
     <div className="grid gap-4">
@@ -173,7 +174,13 @@ function Scanning({ checkpointId }: { checkpointId: string }) {
           ) : (
             <CircleXIcon className="size-10" aria-hidden />
           )}
-          <div className="text-2xl font-bold">{describeScan(result)}</div>
+          {notRsvpd ? (
+            <div className="rounded-md bg-amber-300 px-3 py-1 text-xl font-bold text-amber-950">
+              Not RSVP'd
+            </div>
+          ) : (
+            <div className="text-2xl font-bold">{describeScan(result)}</div>
+          )}
           {result.participant && (
             <div className="text-white/90">
               {result.participant.name} · {result.participant.participantCode} ·{' '}
@@ -186,13 +193,22 @@ function Scanning({ checkpointId }: { checkpointId: string }) {
               <span>Hand over: {result.meal.label}</span>
             </div>
           )}
-          {result.reason === 'not_attending' && scanner && (
-            <Button
-              className="mt-3 bg-white text-red-700 hover:bg-white/90"
-              onClick={() => void run(() => scanner.markAttendingAndScan(lastCode), lastCode)}
-            >
-              Mark attending and check in
-            </Button>
+          {notRsvpd && scanner && (
+            <div className="mt-3 flex gap-2">
+              <Button
+                className="bg-white text-green-800 hover:bg-white/90"
+                onClick={() => void run(() => scanner.markAttendingAndScan(lastCode), lastCode)}
+              >
+                RSVP
+              </Button>
+              <Button
+                variant="outline"
+                className="border-white bg-transparent text-white hover:bg-white/15 hover:text-white"
+                onClick={() => void run(() => scanner.allowWithoutRsvp(lastCode), lastCode)}
+              >
+                Allow
+              </Button>
+            </div>
           )}
         </div>
       )}

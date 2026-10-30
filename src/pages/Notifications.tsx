@@ -10,6 +10,7 @@ import {
 import { BellOffIcon, BellRingIcon, InfoIcon, SendIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
+import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -157,6 +158,7 @@ function SendForm({ channels }: { channels: Schemas['Channel'][] }) {
 }
 
 function Feed({ items, error }: { items: Schemas['Notification'][] | undefined; error: unknown }) {
+  if (!items && !error) return <CardsSkeleton label="Loading notifications" />;
   return (
     <section aria-label="Notifications" className="grid gap-3">
       <ErrorText error={error} />

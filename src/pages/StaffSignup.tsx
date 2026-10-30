@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
-import { Loading } from '@/components/Loading';
+import { FormSkeleton } from '@/components/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ export function StaffSignup() {
     portal.staff.signup({ linkToken: token, ...v }),
   );
 
-  if (link.isPending) return <Loading>Checking the link…</Loading>;
+  if (link.isPending) return <FormSkeleton label="Checking the link" />;
   if (link.isError) return <ErrorText error={link.error} />;
   if (link.data.kind !== 'staff') {
     return <ErrorText error={new Error('This is not a staff link.')} />;

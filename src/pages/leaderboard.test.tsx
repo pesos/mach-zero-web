@@ -1,9 +1,10 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { asParticipant, asStaff } from '@/test/fixtures';
+import { asParticipant, asStaff, round } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
-import { E, P, portalEvent, portalInfo, server } from '@/test/server';
+import { apiError, E, P, portalEvent, portalInfo, server } from '@/test/server';
 
 const board = (visibleToEveryone: boolean) => ({
   visibleToEveryone,
@@ -40,10 +41,29 @@ describe('leaderboard', () => {
     expect(within(list).getByRole('listitem')).toHaveTextContent(/^1Byte Club17\.5 \/ 20$/);
   });
 
-  it('waits until the organisers share it, and leaves it out of the menu', async () => {
+  it('shows an empty state until the organisers share it, but keeps it in the menu', async () => {
     renderPortal('/leaderboard', { session: asParticipant() });
-    expect(await screen.findByText(/have not shared the leaderboard yet/)).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Leaderboard' })).not.toBeInTheDocument();
+    expect(await screen.findByText('No leaderboards released yet')).toBeInTheDocument();
+    expect(screen.getByText(/appear here once the organisers release it/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Leaderboard' })).toBeInTheDocument();
+  });
+
+  it('shows the same empty state to staff who may not see it yet', async () => {
+    renderPortal('/leaderboard', { session: asStaff('volunteer') });
+    expect(await screen.findByText('No leaderboards released yet')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Leaderboard' })).toBeInTheDocument();
+  });
+
+  it('shows the empty state when the API says it is hidden', async () => {
+    shared();
+    server.use(
+      http.get(`${P}/me/leaderboard`, () =>
+        apiError(403, 'LEADERBOARD_HIDDEN', 'The leaderboard is not public.'),
+      ),
+    );
+    renderPortal('/leaderboard', { session: asParticipant() });
+    expect(await screen.findByText('No leaderboards released yet')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('always shows judges the board with each criterion’s average', async () => {
@@ -67,5 +87,55 @@ describe('leaderboard', () => {
     renderPortal('/leaderboard', { session: asStaff('volunteer') });
     const list = await screen.findByRole('list', { name: 'Leaderboard' });
     expect(within(list).queryByText(/judges/)).not.toBeInTheDocument();
+  });
+
+  it('lets a participant switch between released rounds', async () => {
+    const session = asParticipant();
+    shared();
+    const asked: (string | null)[] = [];
+    const sub = (id: string, name: string, phase: string) => ({
+      id: `s-${id}`,
+      round: { id, name, phase },
+      title: name,
+      description: '',
+      position: 0,
+      fields: [],
+      open: false,
+      entry: null,
+    });
+    server.use(
+      http.get(`${P}/me/submissions`, () =>
+        HttpResponse.json([sub('rd1', 'Round 1', 'closed'), sub('rd2', 'Round 2', 'released')]),
+      ),
+      http.get(`${P}/me/leaderboard`, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.get('roundId'));
+        return HttpResponse.json(board(true));
+      }),
+    );
+    renderPortal('/leaderboard', { session });
+    const picker = await screen.findByLabelText('Round');
+    expect(picker).toHaveValue('rd2');
+    await userEvent.selectOptions(picker, 'rd1');
+    await waitFor(() => expect(asked).toContain('rd1'));
+  });
+
+  it('lets staff switch rounds', async () => {
+    const session = asStaff('judge');
+    const asked: (string | null)[] = [];
+    server.use(
+      http.get(`${E}/rounds`, () =>
+        HttpResponse.json([round(), round({ id: 'rd2', name: 'Final', position: 1 })]),
+      ),
+      http.get(`${E}/criteria`, () => HttpResponse.json([])),
+      http.get(`${E}/leaderboard`, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.get('roundId'));
+        return HttpResponse.json(board(false));
+      }),
+    );
+    renderPortal('/leaderboard', { session });
+    const picker = await screen.findByLabelText('Round');
+    await waitFor(() => expect(asked).toEqual(['rd2']));
+    await userEvent.selectOptions(picker, 'rd1');
+    await waitFor(() => expect(asked).toContain('rd1'));
   });
 });

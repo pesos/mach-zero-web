@@ -2,12 +2,14 @@ import { useEventKit, usePortalInfo } from '@eventkit/sdk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BellIcon,
+  FileTextIcon,
   GavelIcon,
   KeyRoundIcon,
   LogOutIcon,
   type LucideIcon,
   MenuIcon,
   ScanLineIcon,
+  SettingsIcon,
   TrophyIcon,
   UserRoundIcon,
   VoteIcon,
@@ -15,11 +17,12 @@ import {
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { Backdrop } from '@/components/Backdrop';
+import { NotificationBell } from '@/components/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { basePath } from '@/lib/paths';
-import { forgetSession, useLeaderboardVisible, useWho } from '@/lib/staff';
+import { forgetSession, useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 
 type Section = { to: string; label: string; icon: LucideIcon };
@@ -28,7 +31,6 @@ export function Layout() {
   const ek = useEventKit();
   const info = usePortalInfo().data!;
   const who = useWho();
-  const showLeaderboard = useLeaderboardVisible();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
@@ -38,12 +40,15 @@ export function Layout() {
     sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
   if (who.canScan) sections.push({ to: '/scan', label: 'Scan', icon: ScanLineIcon });
   if (who.canJudge) sections.push({ to: '/judge', label: 'Judge', icon: GavelIcon });
+  if (who.kind === 'participant' || who.canJudge)
+    sections.push({ to: '/submissions', label: 'Submissions', icon: FileTextIcon });
   if (who.kind) {
     sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
-    if (showLeaderboard)
-      sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
+    sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
     sections.push({ to: info.paths.notifications, label: 'Notifications', icon: BellIcon });
   }
+  if (who.kind === 'participant')
+    sections.push({ to: '/settings', label: 'Settings', icon: SettingsIcon });
   const current = sections.find((s) => s.to === pathname)?.label;
   const signOut = () => {
     setMenuOpen(false);
@@ -97,7 +102,7 @@ export function Layout() {
   );
 
   return (
-    <div className="relative isolate flex min-h-svh flex-col">
+    <div className="relative isolate flex min-h-dvh flex-col">
       <Backdrop scene={pathname === '/' ? 'base' : who.kind ? 'outpost' : 'plan'} />
       <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 backdrop-blur-md">
         <div
@@ -123,6 +128,7 @@ export function Layout() {
               </span>
               <img src="/silicon.png" alt="Silicon" className="size-10 object-contain" />
             </div>
+            {who.kind ? <NotificationBell /> : null}
             {who.kind ? (
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
@@ -157,7 +163,7 @@ export function Layout() {
         {/* Signed in: the sections in a full-height sidebar from md up (a sheet on phones). */}
         {who.kind && (
           <aside className="hidden border-r border-border/70 bg-card/60 backdrop-blur-md md:block">
-            <div className="sticky top-14 h-[calc(100svh-3.5rem)] overflow-y-auto p-3">{menu}</div>
+            <div className="sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto p-3">{menu}</div>
           </aside>
         )}
         <div className={cn(who.kind && 'px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8 md:px-8')}>

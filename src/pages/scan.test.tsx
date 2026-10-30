@@ -63,12 +63,22 @@ function scanResult(overrides: Partial<Schemas['ScanResult']> = {}): Schemas['Sc
 }
 
 function scanning(
-  onScan: (body: { qrToken: string; checkpointId: string }) => Schemas['ScanResult'] | Response,
+  onScan: (body: {
+    qrToken: string;
+    checkpointId: string;
+    allowWithoutRsvp?: boolean;
+  }) => Schemas['ScanResult'] | Response,
 ) {
   server.use(
     http.get(`${E}/checkpoints`, () => HttpResponse.json([gate, lunch])),
     http.post(`${E}/scans`, async ({ request }) => {
-      const r = onScan((await request.json()) as { qrToken: string; checkpointId: string });
+      const r = onScan(
+        (await request.json()) as {
+          qrToken: string;
+          checkpointId: string;
+          allowWithoutRsvp?: boolean;
+        },
+      );
       return r instanceof Response ? r : HttpResponse.json(r, { status: 201 });
     }),
   );
@@ -110,11 +120,29 @@ describe('the scanner', () => {
     window.localStorage.setItem('portal.checkpoint', 'cp-gate');
     renderPortal('/scan', { session: asStaff('admin') });
     await userEvent.click(await screen.findByRole('button', { name: 'Camera sees a code' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Has not confirmed attendance (RSVP) yet',
-    );
-    await userEvent.click(screen.getByRole('button', { name: 'Mark attending and check in' }));
+    const card = await screen.findByRole('status');
+    expect(card).toHaveTextContent("Not RSVP'd");
+    expect(card).toHaveTextContent('Ravi · PX-0002 · Byte Club');
+    expect(card).toHaveClass('bg-success');
+    await userEvent.click(screen.getByRole('button', { name: 'RSVP' }));
     expect(await screen.findByText('Checked in')).toBeInTheDocument();
+  });
+
+  it('lets someone in without an RSVP', async () => {
+    const sent: (boolean | undefined)[] = [];
+    scanning((b) => {
+      sent.push(b.allowWithoutRsvp);
+      return b.allowWithoutRsvp
+        ? scanResult()
+        : scanResult({ result: 'rejected', reason: 'not_attending' });
+    });
+    window.localStorage.setItem('portal.checkpoint', 'cp-gate');
+    renderPortal('/scan', { session: asStaff('volunteer') });
+    await userEvent.click(await screen.findByRole('button', { name: 'Camera sees a code' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Allow' }));
+    expect(await screen.findByText('Checked in')).toBeInTheDocument();
+    expect(sent).toEqual([undefined, true]);
+    expect(screen.queryByRole('button', { name: 'Allow' })).not.toBeInTheDocument();
   });
 
   it('says what to hand over at a meal checkpoint', async () => {

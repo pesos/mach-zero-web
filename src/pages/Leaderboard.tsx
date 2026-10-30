@@ -1,9 +1,16 @@
-import type { Schemas } from '@eventkit/sdk';
-import { useEventKit, useEventQuery, usePortalInfo } from '@eventkit/sdk/react';
-import { useQuery } from '@tanstack/react-query';
+import { isEventKitError, type Schemas } from '@eventkit/sdk';
+import {
+  useEventQuery,
+  useMyLeaderboard,
+  useMySubmissions,
+  usePortalInfo,
+  useRounds,
+} from '@eventkit/sdk/react';
 import { EyeOffIcon, InfoIcon, TrophyIcon } from 'lucide-react';
 import { ErrorText } from '@/components/ErrorText';
-import { Loading } from '@/components/Loading';
+import { RoundPicker } from '@/components/RoundPicker';
+import { useRoundChoice } from '@/lib/rounds';
+import { ListSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWho } from '@/lib/staff';
@@ -31,36 +38,63 @@ export function Leaderboard() {
 }
 
 function ParticipantBoard() {
-  const ek = useEventKit();
   const { event } = usePortalInfo().data!;
-  const board = useQuery({
-    queryKey: ['eventkit', 'portal', 'leaderboard'],
-    queryFn: () => ek.portal.me.leaderboard(),
-    enabled: event.leaderboardVisible,
-    refetchInterval: 30_000,
-  });
   if (!event.leaderboardVisible) return <NotYet />;
-  return <Board board={board.data} error={board.error} />;
+  return <ParticipantRounds />;
+}
+
+/** Participants learn of rounds through the submission forms they can see. */
+function ParticipantRounds() {
+  const submissions = useMySubmissions();
+  const seen = new Map<string, { id: string; name: string; phase: string }>();
+  for (const s of submissions.data ?? []) {
+    if (s.round.phase !== 'draft') seen.set(s.round.id, s.round);
+  }
+  const rounds = [...seen.values()];
+  const [roundId, setRoundId] = useRoundChoice(rounds);
+  // Without a choice the API picks the latest released or closed round.
+  const board = useMyLeaderboard(roundId);
+  return (
+    <div className="grid gap-4">
+      <RoundPicker rounds={rounds} value={roundId ?? board.data?.round?.id} onChange={setRoundId} />
+      <Board board={board.data} error={board.error} />
+    </div>
+  );
 }
 
 function StaffBoard() {
   const who = useWho();
   const { event } = usePortalInfo().data!;
   const allowed = who.canJudge || event.leaderboardVisible;
-  const board = useEventQuery('leaderboard', (e) => e.leaderboard(), {
-    enabled: allowed,
-    refetchInterval: 30_000,
-  });
-  const criteria = useEventQuery('criteria', (e) => e.criteria.list(), {
-    enabled: allowed && who.canJudge,
-  });
+  const rounds = useRounds();
+  const [roundId, setRoundId] = useRoundChoice(rounds.data ?? []);
+  const board = useEventQuery(
+    'leaderboard',
+    (e) => e.leaderboard(roundId),
+    {
+      enabled: allowed && !rounds.isPending,
+      refetchInterval: 30_000,
+    },
+    [roundId],
+  );
+  const criteria = useEventQuery(
+    'criteria',
+    (e) => e.criteria.list(roundId),
+    {
+      enabled: allowed && who.canJudge && !rounds.isPending,
+    },
+    [roundId],
+  );
   if (!allowed) return <NotYet />;
   return (
-    <Board
-      board={board.data}
-      error={board.error ?? criteria.error}
-      criteria={who.canJudge ? criteria.data : undefined}
-    />
+    <div className="grid gap-4">
+      <RoundPicker rounds={rounds.data ?? []} value={roundId} onChange={setRoundId} />
+      <Board
+        board={board.data}
+        error={board.error ?? criteria.error}
+        criteria={who.canJudge ? criteria.data : undefined}
+      />
+    </div>
   );
 }
 
@@ -68,8 +102,9 @@ function NotYet() {
   return (
     <div className="grid justify-items-center gap-2 rounded-xl border border-dashed bg-card/70 p-8 text-center">
       <EyeOffIcon className="size-6 text-muted-foreground" aria-hidden />
+      <h2 className="font-semibold">No leaderboards released yet</h2>
       <p className="text-sm text-muted-foreground">
-        The organisers have not shared the leaderboard yet.
+        It will appear here once the organisers release it.
       </p>
     </div>
   );
@@ -84,7 +119,8 @@ function Board({
   error: unknown;
   criteria?: Schemas['Criterion'][];
 }) {
-  if (!board && !error) return <Loading />;
+  if (isEventKitError(error, 'LEADERBOARD_HIDDEN')) return <NotYet />;
+  if (!board && !error) return <ListSkeleton label="Loading the leaderboard" rows={5} />;
   const names = new Map(criteria?.map((c) => [c.id, c.name]));
   return (
     <Card>

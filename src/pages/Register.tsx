@@ -23,7 +23,7 @@ import { useParams } from 'react-router';
 import { CopyButton } from '@/components/CopyButton';
 import { ErrorText } from '@/components/ErrorText';
 import { FieldInputs } from '@/components/FieldInputs';
-import { Loading } from '@/components/Loading';
+import { FormSkeleton } from '@/components/Skeletons';
 import { PaymentInstructions } from '@/components/PaymentInstructions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +60,7 @@ export function Register() {
   );
 
   if (register.data) return <Registered result={register.data} />;
-  if (link.isPending) return <Loading>Checking the link…</Loading>;
+  if (link.isPending) return <FormSkeleton label="Checking the link" />;
   if (link.isError) return <ErrorText error={link.error} />;
   if (link.data.kind !== 'registration') {
     return <ErrorText error={new Error('This is not a registration link.')} />;
@@ -299,61 +299,64 @@ function TeamForm(props: {
 type Result = Awaited<ReturnType<ReturnType<typeof useEventKit>['portal']['register']>>;
 
 /**
- * Shown once: every member's ID and personal link. QR codes wait for the team
- * to be confirmed, on each member's own page.
+ * Shown once: the leader's own ID and personal link. Everyone else gets theirs
+ * by email. QR codes wait for the team to be confirmed, on each member's page.
  */
 function Registered({ result }: { result: Result }) {
   const leader = result.members.find((m) => m.isLeader);
+  const link = leader?.link;
   return (
     <div className="grid gap-6">
-      {leader && (
-        <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
-          <MailIcon className="text-primary" />
-          <AlertTitle className="text-base">Check the team leader's inbox</AlertTitle>
-          <AlertDescription className="text-foreground">
-            <p>
-              We've emailed everyone's participant ID and personal link to{' '}
-              <span className="font-semibold break-all">{leader.email}</span>.
-            </p>
-            <p className="font-medium">
-              Not there in a few minutes? Check the spam or promotions folder.
-            </p>
-          </AlertDescription>
-        </Alert>
-      )}
+      <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
+        <MailIcon className="text-primary" />
+        <AlertTitle className="text-base">Each member gets their own link by email</AlertTitle>
+        <AlertDescription className="text-foreground">
+          <p>
+            We've emailed every member their participant ID and personal link. Nobody else sees your
+            link, and you don't see theirs.
+          </p>
+          <p className="font-medium">
+            Not there in a few minutes? Check the spam or promotions folder.
+          </p>
+        </AlertDescription>
+      </Alert>
       <Alert className="border-success/40">
         <CircleCheckIcon className="text-success" />
         <AlertTitle>{result.team.name} is registered.</AlertTitle>
         <AlertDescription>
-          Save this page now (screenshot or copy the links): the personal links are shown only once.
-          Send each member their own link; it lets them check their status, RSVP and vote. Their
-          check-in QR code appears there once the team is confirmed.
+          Your personal link is shown below only once: save it now (screenshot or copy). It lets you
+          check your status, RSVP and vote. Your check-in QR code appears there once the team is
+          confirmed.
         </AlertDescription>
       </Alert>
-      {result.members.map((m) => (
-        <Card key={m.registrationId}>
+      {leader && (
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              {m.name} {m.isLeader && <Badge variant="secondary">Leader</Badge>}
+              {leader.name} <Badge variant="secondary">Leader</Badge>
             </CardTitle>
             <CardDescription>
               Participant ID{' '}
-              <span className="font-mono font-semibold text-foreground">{m.participantCode}</span>
+              <span className="font-mono font-semibold text-foreground">
+                {leader.participantCode}
+              </span>
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid min-w-0 gap-2 text-sm">
-              <p className="text-muted-foreground">Personal link</p>
-              <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs break-all">
-                {m.link.url ?? m.link.token}
-              </p>
-              <div>
-                <CopyButton text={m.link.url ?? m.link.token} label="Copy link" />
+          {link && (
+            <CardContent>
+              <div className="grid min-w-0 gap-2 text-sm">
+                <p className="text-muted-foreground">Your personal link</p>
+                <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs break-all">
+                  {link.url ?? link.token}
+                </p>
+                <div>
+                  <CopyButton text={link.url ?? link.token} label="Copy link" />
+                </div>
               </div>
-            </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
-      ))}
+      )}
     </div>
   );
 }

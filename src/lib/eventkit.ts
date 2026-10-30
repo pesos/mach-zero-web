@@ -1,4 +1,4 @@
-import { createEventKit, type EventKit, localStorageSession } from '@eventkit/sdk';
+import { createEventKit, type EventKit, isEventKitError, localStorageSession } from '@eventkit/sdk';
 
 /** The portal's devkit client: this event's id and API key, one session per device. */
 export function makeEventKit(env: Record<string, string | undefined> = import.meta.env): EventKit {
@@ -13,4 +13,9 @@ export function makeEventKit(env: Record<string, string | undefined> = import.me
 /** The friendly text of any error (the API's message, or a generic one). */
 export function errorText(error: unknown): string {
   return error instanceof Error && error.message ? error.message : 'Something went wrong.';
+}
+
+/** Whether an error carries this API code (including codes newer than the SDK's list). */
+export function hasCode(error: unknown, code: string): boolean {
+  return isEventKitError(error) && (error.code as string) === code;
 }

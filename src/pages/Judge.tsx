@@ -1,9 +1,11 @@
 import type { Schemas } from '@eventkit/sdk';
-import { useEventMutation, useEventQuery } from '@eventkit/sdk/react';
+import { useCriteria, useEventMutation, useJudgingTeams, useRounds } from '@eventkit/sdk/react';
 import { CheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
-import { Loading } from '@/components/Loading';
+import { RoundPicker } from '@/components/RoundPicker';
+import { useRoundChoice } from '@/lib/rounds';
+import { CardsSkeleton } from '@/components/Skeletons';
 import { StaffOnly } from '@/components/StaffOnly';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,11 +22,30 @@ export function Judge() {
   );
 }
 
-/** Judges score teams with a checked-in member, against the organiser's rubric. */
+/** Judges (and admins) score teams with a checked-in member, round by round. */
 function JudgePage() {
-  const criteria = useEventQuery('criteria', (e) => e.criteria.list());
-  const teams = useEventQuery('judging-teams', (e) => e.judging.teams());
-  if (criteria.isPending || teams.isPending) return <Loading />;
+  const rounds = useRounds();
+  const [roundId, setRoundId] = useRoundChoice(rounds.data ?? []);
+  if (rounds.isPending) return <CardsSkeleton label="Loading the rounds" count={2} />;
+  if (rounds.isError) return <ErrorText error={rounds.error} />;
+  if (!roundId) {
+    return (
+      <p className="text-sm text-muted-foreground">The organisers have not set up a round yet.</p>
+    );
+  }
+  return (
+    <div className="grid gap-4">
+      <RoundPicker rounds={rounds.data} value={roundId} onChange={setRoundId} />
+      <RoundTeams key={roundId} roundId={roundId} />
+    </div>
+  );
+}
+
+function RoundTeams({ roundId }: { roundId: string }) {
+  const criteria = useCriteria(roundId);
+  const teams = useJudgingTeams(roundId);
+  if (criteria.isPending || teams.isPending)
+    return <CardsSkeleton label="Loading the teams" count={2} />;
   if (criteria.isError || teams.isError) return <ErrorText error={criteria.error ?? teams.error} />;
   if (criteria.data.length === 0) {
     return (
@@ -38,13 +59,17 @@ function JudgePage() {
       </p>
     );
   }
-  return teams.data.map((t) => <ScoreCard key={t.id} team={t} criteria={criteria.data} />);
+  return teams.data.map((t) => (
+    <ScoreCard key={t.id} team={t} criteria={criteria.data} roundId={roundId} />
+  ));
 }
 
 function ScoreCard({
   team,
   criteria,
+  roundId,
 }: {
+  roundId: string;
   team: Schemas['JudgingTeam'];
   criteria: Schemas['Criterion'][];
 }) {
@@ -66,6 +91,7 @@ function ScoreCard({
           value: values[c.id]!,
           comment: comments[c.id]?.trim() || null,
         })),
+      roundId,
     ),
   );
   const setScore = (id: string, value: number | null) => {

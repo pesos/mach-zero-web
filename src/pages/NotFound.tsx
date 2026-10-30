@@ -1,17 +1,16 @@
-import { Link } from 'react-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { CompassIcon } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { ErrorPage } from '@/components/ErrorPage';
 
 export function NotFound() {
+  const navigate = useNavigate();
   return (
-    <Card className="mx-auto w-full max-w-md text-center">
-      <CardContent className="grid justify-items-center gap-4">
-        <p className="chrome-text text-6xl">404</p>
-        <p>This page does not exist.</p>
-        <Button asChild variant="outline">
-          <Link to="/">Back to the event</Link>
-        </Button>
-      </CardContent>
-    </Card>
+    <ErrorPage
+      icon={CompassIcon}
+      title="Page not found"
+      action={{ label: 'Back to the event', onClick: () => void navigate('/') }}
+    >
+      This page does not exist.
+    </ErrorPage>
   );
 }
