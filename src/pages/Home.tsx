@@ -93,23 +93,29 @@ export function Home() {
         <CardContent className="grid gap-6">
           {sponsors.map((group) => (
             <section key={group.title} aria-label={group.title}>
-              <h3 className="mb-3 text-center font-display text-sm tracking-wide text-lavender">
+              <h3 className="mb-4 text-center font-display text-lg font-bold tracking-wide text-lavender sm:text-xl">
                 {group.title}
               </h3>
               <ul className="flex flex-wrap justify-center gap-3">
                 {group.items.map((s) => (
                   <li
                     key={s.name}
-                    className="flex h-24 w-[calc(50%-0.375rem)] items-center justify-center p-2 sm:h-32 sm:p-3"
+                    className="grid w-[calc(50%-0.375rem)] justify-items-center gap-2"
                   >
-                    <img
-                      src={s.logo}
-                      alt={s.name}
-                      className={cn(
-                        'max-h-full max-w-full rounded-md object-contain',
-                        s.framed && 'rounded-xl bg-[#f7f7f7] p-2 sm:p-3',
-                      )}
-                    />
+                    <div className="flex h-24 w-full items-center justify-center p-2 sm:h-32 sm:p-3">
+                      <img
+                        src={s.logo}
+                        alt={s.name}
+                        className={cn(
+                          'max-h-full max-w-full rounded-md object-contain',
+                          s.framed && 'rounded-xl bg-[#f7f7f7] p-2 sm:p-3',
+                        )}
+                      />
+                    </div>
+                    {/* The logo's alt text already names it for screen readers. */}
+                    <p aria-hidden className="text-center text-sm text-foreground/85">
+                      {s.name}
+                    </p>
                   </li>
                 ))}
               </ul>
