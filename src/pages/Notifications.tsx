@@ -7,11 +7,12 @@ import {
   useNotifications,
   usePortalMutation,
 } from '@eventkit/sdk/react';
-import { BellOffIcon, BellRingIcon, InfoIcon, SendIcon } from 'lucide-react';
+import { BellOffIcon, BellRingIcon, ClockIcon, HashIcon, InfoIcon, SendIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -169,23 +170,63 @@ function Feed({ items, error }: { items: Schemas['Notification'][] | undefined; 
         </div>
       )}
       {items?.map((n) => (
-        <Card
-          key={n.id}
-          className={cn('gap-3', n.priority === 'urgent' && 'border-l-4 border-l-destructive')}
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              {n.title} {n.priority === 'urgent' && <Badge variant="destructive">Urgent</Badge>}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              {n.channel.name} · {n.sender.name} · {formatIST(n.sentAt)}
-            </p>
-          </CardHeader>
-          <CardContent className="text-sm leading-relaxed whitespace-pre-line">
-            {n.body}
-          </CardContent>
-        </Card>
+        <NotificationCard key={n.id} n={n} />
       ))}
     </section>
   );
+}
+
+/** Channel and sender as pills, when it was sent, then the message, with an accent bar on the left. */
+function NotificationCard({ n }: { n: Schemas['Notification'] }) {
+  const urgent = n.priority === 'urgent';
+  return (
+    <Card className="relative gap-3 overflow-hidden py-5 pl-1">
+      <span
+        aria-hidden
+        className={cn(
+          'absolute inset-y-0 left-0 w-1',
+          urgent ? 'bg-destructive' : 'bg-gradient-to-b from-primary to-lavender/40',
+        )}
+      />
+      <CardHeader className="gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="outline"
+            className="rounded-full border-primary/50 bg-primary/15 px-3 py-1 text-sm text-primary"
+          >
+            <HashIcon aria-hidden />
+            {n.channel.name}
+          </Badge>
+          <span aria-hidden className="size-1.5 rounded-full bg-muted-foreground/50" />
+          <Badge variant="secondary" className="gap-2 rounded-full py-1 pr-3 pl-1 text-sm">
+            <Avatar className="size-6">
+              <AvatarFallback className="bg-lavender text-xs font-semibold text-primary-foreground">
+                {n.sender.name.trim().charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {n.sender.name}
+          </Badge>
+          {urgent && <Badge variant="destructive">Urgent</Badge>}
+        </div>
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <ClockIcon className="size-4" aria-hidden />
+          <time dateTime={n.sentAt}>{formatIST(n.sentAt)}</time>
+          <span className="text-muted-foreground/60">({timeAgo(n.sentAt)})</span>
+        </p>
+        <CardTitle className="text-lg leading-snug">{n.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="leading-relaxed whitespace-pre-line text-foreground/75">
+        {n.body}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** How long ago, e.g. "just now", "2m ago", "3h ago", "5d ago". */
+function timeAgo(at: string, now = Date.now()): string {
+  const s = Math.max(0, Math.floor((now - Date.parse(at)) / 1000));
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86_400)}d ago`;
 }

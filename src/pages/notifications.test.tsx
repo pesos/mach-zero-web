@@ -35,7 +35,9 @@ describe('notifications', () => {
     const feed = await screen.findByRole('region', { name: 'Notifications' });
     expect(await within(feed).findByText('Judging starts at 4')).toBeInTheDocument();
     expect(within(feed).getByText('Urgent')).toBeInTheDocument();
-    expect(within(feed).getByText(/Everyone · Organiser ·/)).toBeInTheDocument();
+    expect(within(feed).getByText('Everyone')).toBeInTheDocument();
+    expect(within(feed).getByText('Organiser')).toBeInTheDocument();
+    expect(within(feed).getByText(/ago\)$|just now\)$/)).toBeInTheDocument();
   });
 
   it('lets staff send to the channels they may use', async () => {
