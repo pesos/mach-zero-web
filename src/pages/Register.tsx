@@ -318,9 +318,8 @@ function Registered({ result }: { result: Result }) {
           )}
         </AlertTitle>
         <AlertDescription>
-          Your personal link is shown below only once: save it now (screenshot or copy). It lets you
-          check your status, RSVP and vote. Your check-in QR code appears there once the team is
-          confirmed.
+          Save your link below now: it's shown only once. Your check-in QR appears there once the
+          team is confirmed.
         </AlertDescription>
       </Alert>
       <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
