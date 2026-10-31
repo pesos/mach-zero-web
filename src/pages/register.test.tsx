@@ -233,16 +233,16 @@ describe('registering a team', () => {
     expect(screen.getByText('https://portal.test/me/ek_a')).toBeInTheDocument();
     // Members' own links are never shown: they get them by email.
     expect(screen.queryByText('Ravi')).not.toBeInTheDocument();
-    expect(screen.getByText('Each member gets their own link by email')).toBeInTheDocument();
+    expect(screen.getByText("We've emailed you every member's link")).toBeInTheDocument();
     expect(screen.getByText('Your personal link')).toBeInTheDocument();
     expect(screen.queryByText('PX-0002')).not.toBeInTheDocument();
-    expect(screen.getByText('spam or promotions folder')).toBeInTheDocument();
+    expect(screen.getByText('Not in your inbox? Check spam or promotions.')).toBeInTheDocument();
     expect(screen.queryByText(/Nobody else sees your link/)).not.toBeInTheDocument();
     // The team's card comes before the email one.
     expect(
       screen
         .getByText('Byte Club is registered.')
-        .compareDocumentPosition(screen.getByText('Each member gets their own link by email')) &
+        .compareDocumentPosition(screen.getByText("We've emailed you every member's link")) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getByText('Payment confirmation pending')).toBeInTheDocument();

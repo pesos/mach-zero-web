@@ -324,12 +324,11 @@ function Registered({ result }: { result: Result }) {
       </Alert>
       <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
         <MailIcon className="text-primary" />
-        <AlertTitle className="text-base">Each member gets their own link by email</AlertTitle>
+        <AlertTitle className="text-base">We've emailed you every member's link</AlertTitle>
         <AlertDescription className="text-foreground">
-          <p>We've emailed every member their participant ID and personal link.</p>
-          <p>
-            Not there in a few minutes? Check the{' '}
-            <strong className="font-bold">spam or promotions folder</strong>.
+          <p>Pass each member their participant ID and personal link.</p>
+          <p className="mt-1 rounded-md bg-primary/20 px-3 py-2 text-base font-bold">
+            Not in your inbox? Check spam or promotions.
           </p>
         </AlertDescription>
       </Alert>
