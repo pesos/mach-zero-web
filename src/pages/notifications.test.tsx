@@ -41,7 +41,7 @@ describe('notifications', () => {
     expect(within(feed).getByText(/ago\)$|just now\)$/)).toBeInTheDocument();
   });
 
-  it('filters the feed to urgent ones and groups it by channel', async () => {
+  it('filters the feed to urgent ones, or to a channel picked from a menu', async () => {
     const session = asParticipant();
     server.use(
       http.get(`${P}/me/notifications`, () =>
@@ -59,25 +59,22 @@ describe('notifications', () => {
     renderPortal('/notifications', { session });
     const feed = await screen.findByRole('region', { name: 'Notifications' });
     expect(await within(feed).findByRole('tab', { name: /All\s*2/ })).toBeInTheDocument();
-    expect(within(feed).getByLabelText('1 urgent')).toBeInTheDocument();
 
-    await userEvent.click(within(feed).getByRole('tab', { name: /Urgent/ }));
+    await userEvent.click(within(feed).getByRole('tab', { name: 'Urgent' }));
     const urgent = within(feed).getByRole('tabpanel');
     expect(within(urgent).getByText('Judging starts at 4')).toBeInTheDocument();
     expect(within(urgent).queryByText('Lunch is served')).not.toBeInTheDocument();
 
-    await userEvent.click(within(feed).getByRole('tab', { name: 'Channels' }));
-    const channels = within(feed).getByRole('tabpanel');
-    expect(
-      within(within(channels).getByRole('region', { name: 'Everyone' })).getByText(
-        'Lunch is served',
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(within(channels).getByRole('region', { name: 'Judges' })).getByText(
-        'Judging starts at 4',
-      ),
-    ).toBeInTheDocument();
+    await userEvent.click(within(feed).getByRole('button', { name: 'Channels' }));
+    await userEvent.click(await screen.findByRole('menuitemradio', { name: /Everyone/ }));
+    expect(within(feed).getByRole('button', { name: 'Everyone' })).toBeInTheDocument();
+    const channel = within(feed).getByRole('tabpanel');
+    expect(within(channel).getByText('Lunch is served')).toBeInTheDocument();
+    expect(within(channel).queryByText('Judging starts at 4')).not.toBeInTheDocument();
+    expect(within(feed).getByRole('tab', { name: 'Urgent' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
   });
 
   it('lets staff send to the channels they may use', async () => {
