@@ -31,7 +31,7 @@ export const goodToKnow: { title: string; body: string }[] = [
   },
 ];
 
-/** Logos sit on a tile of their own background (#f7f7f7), since the portal is dark. */
+/** Logos sit straight on the portal's dark background: each is made to read on it. */
 export type Sponsor = { name: string; logo: string };
 
 export const sponsors: { title: string; items: Sponsor[] }[] = [

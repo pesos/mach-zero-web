@@ -86,6 +86,35 @@ export function Home() {
         </Fact>
       </ul>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className={sectionTitle}>Sponsors & partners</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6">
+          {sponsors.map((group) => (
+            <section key={group.title} aria-label={group.title}>
+              <h3 className="mb-3 text-center font-display text-sm tracking-wide text-lavender">
+                {group.title}
+              </h3>
+              <ul className="flex flex-wrap justify-center gap-3">
+                {group.items.map((s) => (
+                  <li
+                    key={s.name}
+                    className="flex h-32 w-full items-center justify-center p-3 sm:w-[calc(50%-0.375rem)]"
+                  >
+                    <img
+                      src={s.logo}
+                      alt={s.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </CardContent>
+      </Card>
+
       <Card className={cn(registrationOpen && 'border-primary/30')}>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid gap-2">
@@ -163,35 +192,6 @@ export function Home() {
               <p className="font-medium">{g.title}</p>
               <p className="mt-1 leading-relaxed text-muted-foreground">{g.body}</p>
             </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className={sectionTitle}>Sponsors & partners</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-6">
-          {sponsors.map((group) => (
-            <section key={group.title} aria-label={group.title}>
-              <h3 className="mb-3 font-display text-sm tracking-wide text-lavender">
-                {group.title}
-              </h3>
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {group.items.map((s) => (
-                  <li
-                    key={s.name}
-                    className="flex h-32 items-center justify-center rounded-lg bg-[#f7f7f7] p-3"
-                  >
-                    <img
-                      src={s.logo}
-                      alt={s.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </li>
-                ))}
-              </ul>
-            </section>
           ))}
         </CardContent>
       </Card>
