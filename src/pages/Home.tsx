@@ -69,7 +69,11 @@ export function Home() {
           {days.join(' & ')}
         </Fact>
         <Fact icon={ClockIcon} label="Hours">
-          {dailyHours}
+          {dailyHours.map((h) => (
+            <span key={h} className="block">
+              {h}
+            </span>
+          ))}
         </Fact>
         <Fact icon={MapPinIcon} label="Where">
           {event.venue}

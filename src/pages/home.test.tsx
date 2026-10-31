@@ -43,7 +43,10 @@ describe('the event home page', () => {
     expect(within(day1).getByText('Round 1')).toBeInTheDocument();
     expect(within(day1).getByRole('heading', { name: 'Day 1 · Sat, 31 Oct' })).toBeInTheDocument();
     const day2 = screen.getByRole('region', { name: 'Day 2' });
-    expect(within(day2).getByText('Winners announced, event close')).toBeInTheDocument();
+    expect(within(day2).getByText('Event wrap-up and winners')).toBeInTheDocument();
+    expect(within(day2).getByText('Final presentations')).toBeInTheDocument();
+    expect(screen.getByText('Day 1: 8:00 AM – 7:00 PM')).toBeInTheDocument();
+    expect(screen.getByText('Day 2: 7:00 AM – 7:00 PM')).toBeInTheDocument();
     expect(screen.getByText(/At least two CSE students per team/)).toBeInTheDocument();
   });
 

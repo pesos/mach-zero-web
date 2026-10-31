@@ -320,7 +320,7 @@ function LeaderTeam() {
                     <Input
                       id="pay-receipt"
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) pay.mutate(file);

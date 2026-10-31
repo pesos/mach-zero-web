@@ -154,7 +154,17 @@ describe('registering a team', () => {
     );
     renderPortal('/register/reg-token');
     expect(await screen.findByRole('heading', { name: 'Register your team' })).toBeInTheDocument();
-    expect(screen.getByText('At least one CSE member')).toBeInTheDocument();
+    // The team rule sits above the team name, in the first card.
+    const ruleText = screen.getByText('At least one CSE member');
+    expect(
+      ruleText.compareDocumentPosition(screen.getByLabelText('Team name')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Screenshots only: no PDFs.
+    expect(screen.getByLabelText('Payment receipt')).toHaveAttribute(
+      'accept',
+      'image/jpeg,image/png,image/webp',
+    );
     expect(screen.getByRole('img', { name: 'UPI QR code to pay' })).toBeInTheDocument();
     const submit = screen.getByRole('button', { name: 'Register team' });
     expect(submit).toBeDisabled();

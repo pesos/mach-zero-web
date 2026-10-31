@@ -14,8 +14,8 @@ export const about = [
   'Instead of throwaway prototypes, teams fix issues, add features and improve real projects. Standout work is carried forward as pull requests after the event, giving participants a pathway into long-term open-source involvement.',
 ];
 
-/** Both days run these hours. */
-export const dailyHours = '8:00 AM – 7:00 PM, both days';
+/** Each day's hours, in day order. */
+export const dailyHours = ['Day 1: 8:00 AM – 7:00 PM', 'Day 2: 7:00 AM – 7:00 PM'];
 
 export const highlights: { value: string; label: string }[] = [
   { value: '~50', label: 'teams' },
@@ -36,22 +36,22 @@ export type Slot = { time: string; title: string; kind?: 'round' | 'talk' | 'bre
 export const schedule: Slot[][] = [
   [
     { time: '8:00 – 9:00', title: 'Registration and breakfast', kind: 'break' },
-    { time: '9:00 – 11:00', title: 'Introduction and inauguration' },
-    { time: '11:00 – 1:30', title: 'Round 1', kind: 'round' },
-    { time: '1:30 – 2:30', title: 'Lunch', kind: 'break' },
-    { time: '2:30 – 3:00', title: 'Lightning talk 1', kind: 'talk' },
-    { time: '3:00 – 5:30', title: 'Round 2', kind: 'round' },
+    { time: '9:00 – 10:30', title: 'Inauguration and orientation' },
+    { time: '10:30 – 1:00', title: 'Round 1', kind: 'round' },
+    { time: '1:00 – 2:00', title: 'Lunch', kind: 'break' },
+    { time: '2:00 – 2:30', title: 'Lightning talk 1', kind: 'talk' },
+    { time: '2:30 – 5:30', title: 'Round 2', kind: 'round' },
     { time: '5:30 – 6:30', title: 'Snacks and break', kind: 'break' },
     { time: '6:30 – 7:00', title: 'Lightning talk 2', kind: 'talk' },
   ],
   [
     { time: '7:00 – 8:30', title: 'Breakfast and registration', kind: 'break' },
-    { time: '8:30 – 12:30', title: 'Round 3: working time', kind: 'round' },
+    { time: '8:30 – 12:30', title: 'Round 3', kind: 'round' },
     { time: '12:30 – 1:30', title: 'Lunch', kind: 'break' },
     { time: '1:30 – 2:00', title: 'Lightning talk 3', kind: 'talk' },
-    { time: '2:00 – 3:45', title: 'Round 3 judging, games and results', kind: 'round' },
+    { time: '2:00 – 3:45', title: 'Judging' },
     { time: '3:45 – 4:45', title: 'Round 4: presentation prep', kind: 'round' },
-    { time: '4:45 – 6:30', title: 'Round 4: judging', kind: 'round' },
-    { time: '6:30 – 7:00', title: 'Winners announced, event close' },
+    { time: '4:45 – 6:30', title: 'Final presentations', kind: 'round' },
+    { time: '6:30 – 7:00', title: 'Event wrap-up and winners' },
   ],
 ];

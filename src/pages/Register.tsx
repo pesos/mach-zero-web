@@ -130,11 +130,17 @@ function TeamForm(props: {
             Register your team
           </CardTitle>
           <CardDescription>
-            The team leader fills this in for everyone ({event.minTeamSize}–{event.maxTeamSize}{' '}
-            members). Each member then gets a participant ID, a QR code and a personal link.
+            Team leader fills for everyone ({event.minTeamSize}-{event.maxTeamSize} members).
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
+          {teamRules.length > 0 && (
+            <ul className="list-disc rounded-lg bg-muted/60 py-3 pr-4 pl-8 text-sm text-muted-foreground sm:col-span-2">
+              {teamRules.map((r) => (
+                <li key={r.id}>{r.description}</li>
+              ))}
+            </ul>
+          )}
           <div className="grid gap-2 sm:col-span-2">
             <Label htmlFor="team-name">Team name</Label>
             <Input id="team-name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -145,13 +151,6 @@ function TeamForm(props: {
             value={teamAnswers}
             onChange={setTeamAnswers}
           />
-          {teamRules.length > 0 && (
-            <ul className="list-disc rounded-lg bg-muted/60 py-3 pr-4 pl-8 text-sm text-muted-foreground sm:col-span-2">
-              {teamRules.map((r) => (
-                <li key={r.id}>{r.description}</li>
-              ))}
-            </ul>
-          )}
         </CardContent>
       </Card>
 
@@ -231,7 +230,7 @@ function TeamForm(props: {
               {event.feeBasis === 'per_team' ? ' for the team' : ''}
             </CardTitle>
             <CardDescription>
-              Pay as shown below, then upload the receipt (a screenshot or PDF).
+              Pay as shown below, then upload the receipt (a screenshot).
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -241,7 +240,7 @@ function TeamForm(props: {
               <Input
                 id="receipt"
                 type="file"
-                accept="image/jpeg,image/png,image/webp,application/pdf"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
               />
             </div>
