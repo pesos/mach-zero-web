@@ -34,10 +34,50 @@ describe('notifications', () => {
     renderPortal('/notifications', { session });
     const feed = await screen.findByRole('region', { name: 'Notifications' });
     expect(await within(feed).findByText('Judging starts at 4')).toBeInTheDocument();
-    expect(within(feed).getByText('Urgent')).toBeInTheDocument();
+    expect(within(feed).getByRole('tab', { name: /Urgent/ })).toBeInTheDocument();
+    expect(within(feed).getByRole('tabpanel')).toHaveTextContent(/Urgent/);
     expect(within(feed).getByText('Everyone')).toBeInTheDocument();
     expect(within(feed).getByText('Organiser')).toBeInTheDocument();
     expect(within(feed).getByText(/ago\)$|just now\)$/)).toBeInTheDocument();
+  });
+
+  it('filters the feed to urgent ones and groups it by channel', async () => {
+    const session = asParticipant();
+    server.use(
+      http.get(`${P}/me/notifications`, () =>
+        HttpResponse.json([
+          notification({ id: 'n1', title: 'Lunch is served' }),
+          notification({
+            id: 'n2',
+            title: 'Judging starts at 4',
+            priority: 'urgent',
+            channel: { id: 'c2', name: 'Judges' },
+          }),
+        ]),
+      ),
+    );
+    renderPortal('/notifications', { session });
+    const feed = await screen.findByRole('region', { name: 'Notifications' });
+    expect(await within(feed).findByRole('tab', { name: /All\s*2/ })).toBeInTheDocument();
+    expect(within(feed).getByLabelText('1 urgent')).toBeInTheDocument();
+
+    await userEvent.click(within(feed).getByRole('tab', { name: /Urgent/ }));
+    const urgent = within(feed).getByRole('tabpanel');
+    expect(within(urgent).getByText('Judging starts at 4')).toBeInTheDocument();
+    expect(within(urgent).queryByText('Lunch is served')).not.toBeInTheDocument();
+
+    await userEvent.click(within(feed).getByRole('tab', { name: 'Channels' }));
+    const channels = within(feed).getByRole('tabpanel');
+    expect(
+      within(within(channels).getByRole('region', { name: 'Everyone' })).getByText(
+        'Lunch is served',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(within(channels).getByRole('region', { name: 'Judges' })).getByText(
+        'Judging starts at 4',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('lets staff send to the channels they may use', async () => {

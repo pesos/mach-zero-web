@@ -7,7 +7,16 @@ import {
   useNotifications,
   usePortalMutation,
 } from '@eventkit/sdk/react';
-import { BellOffIcon, BellRingIcon, ClockIcon, HashIcon, InfoIcon, SendIcon } from 'lucide-react';
+import {
+  BellOffIcon,
+  BellPlusIcon,
+  BellRingIcon,
+  CheckIcon,
+  ClockIcon,
+  HashIcon,
+  InfoIcon,
+  SendIcon,
+} from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
 import { CardsSkeleton } from '@/components/Skeletons';
@@ -20,6 +29,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
@@ -39,12 +49,69 @@ export function Notifications() {
   );
 }
 
-function PushButton({ on, onClick }: { on: boolean; onClick: () => void }) {
+const DISMISSED = 'notifications.pushBanner.dismissed';
+
+/** Offers push alerts for urgent notifications until enabled or dismissed (remembered on this device). */
+function PushBanner({
+  on,
+  pending,
+  error,
+  onEnable,
+}: {
+  on: boolean;
+  pending: boolean;
+  error: unknown;
+  onEnable: () => void;
+}) {
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(DISMISSED) === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (dismissed) return null;
+  const dismiss = () => {
+    setDismissed(true);
+    try {
+      localStorage.setItem(DISMISSED, '1');
+    } catch {
+      // Private mode: it comes back next visit.
+    }
+  };
   return (
-    <Button variant="outline" className="w-fit bg-card/80" onClick={onClick}>
-      <BellRingIcon />
-      {on ? 'Urgent alerts on' : 'Get urgent alerts on this device'}
-    </Button>
+    <Card className="py-4" aria-label="Urgent alerts" role="region">
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-primary/30 bg-secondary text-primary">
+          <BellPlusIcon className="size-6" aria-hidden />
+        </span>
+        <div className="grid min-w-0 flex-1 gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-base font-semibold">Get urgent alerts on this device</p>
+            <Badge
+              variant="outline"
+              className="rounded-md border-primary/40 bg-primary/10 font-mono tracking-wider text-primary uppercase"
+            >
+              Recommended
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            A push alert as soon as the organisers send something urgent, even with the portal
+            closed.
+          </p>
+          <ErrorText error={error} />
+        </div>
+        <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+          <Button variant="ghost" onClick={dismiss}>
+            {on ? 'Close' : 'Dismiss'}
+          </Button>
+          <Button onClick={onEnable} disabled={on || pending}>
+            {on ? <CheckIcon /> : <BellRingIcon />}
+            {on ? 'Alerts on' : 'Enable alerts'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -55,10 +122,12 @@ function ParticipantFeed() {
   return (
     <>
       {ek.portal.me.push.isSupported() && (
-        <div className="grid gap-2">
-          <PushButton on={push.isSuccess} onClick={() => push.mutate(undefined)} />
-          <ErrorText error={push.error} />
-        </div>
+        <PushBanner
+          on={push.isSuccess}
+          pending={push.isPending}
+          error={push.error}
+          onEnable={() => push.mutate(undefined)}
+        />
       )}
       <Feed items={feed.data} error={feed.error} />
     </>
@@ -74,10 +143,12 @@ function StaffFeed() {
   return (
     <>
       {ek.push.isSupported() && (
-        <div className="grid gap-2">
-          <PushButton on={push.isSuccess} onClick={() => push.mutate(undefined)} />
-          <ErrorText error={push.error} />
-        </div>
+        <PushBanner
+          on={push.isSuccess}
+          pending={push.isPending}
+          error={push.error}
+          onEnable={() => push.mutate(undefined)}
+        />
       )}
       {sendable.length > 0 && <SendForm channels={sendable} />}
       <Feed items={feed.data} error={feed.error ?? channels.error} />
@@ -160,20 +231,76 @@ function SendForm({ channels }: { channels: Schemas['Channel'][] }) {
 
 function Feed({ items, error }: { items: Schemas['Notification'][] | undefined; error: unknown }) {
   if (!items && !error) return <CardsSkeleton label="Loading notifications" />;
+  const urgent = items?.filter((n) => n.priority === 'urgent') ?? [];
+  const byChannel = new Map<string, Schemas['Notification'][]>();
+  for (const n of items ?? [])
+    byChannel.set(n.channel.name, [...(byChannel.get(n.channel.name) ?? []), n]);
   return (
     <section aria-label="Notifications" className="grid gap-3">
       <ErrorText error={error} />
-      {items?.length === 0 && (
-        <div className="grid justify-items-center gap-2 rounded-xl border border-dashed bg-card/70 p-8 text-center">
-          <BellOffIcon className="size-6 text-muted-foreground" aria-hidden />
-          <p className="text-sm text-muted-foreground">No notifications yet.</p>
-        </div>
-      )}
-      {items?.map((n) => (
-        <NotificationCard key={n.id} n={n} />
-      ))}
+      <Tabs defaultValue="all" className="gap-4">
+        <TabsList className="h-auto gap-1 border-b bg-transparent p-0 pb-3 w-full justify-start rounded-none">
+          <TabsTrigger value="all" className={tabClass}>
+            All
+            <Badge variant="secondary" className="rounded-md px-1.5 tabular-nums">
+              {items?.length ?? 0}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="urgent" className={tabClass}>
+            Urgent
+            {urgent.length > 0 && (
+              <span
+                className="size-2 rounded-full bg-destructive"
+                aria-label={`${urgent.length} urgent`}
+              />
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="channels" className={tabClass}>
+            Channels
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="grid gap-3">
+          <CardList items={items} empty="No notifications yet." />
+        </TabsContent>
+        <TabsContent value="urgent" className="grid gap-3">
+          <CardList items={items && urgent} empty="No urgent notifications." />
+        </TabsContent>
+        <TabsContent value="channels" className="grid gap-6">
+          {items?.length === 0 && <CardList items={items} empty="No notifications yet." />}
+          {[...byChannel].map(([channel, list]) => (
+            <section key={channel} aria-label={channel} className="grid gap-3">
+              <h3 className="flex items-center gap-1.5 text-sm font-medium text-lavender">
+                <HashIcon className="size-4" aria-hidden />
+                {channel}
+                <span className="text-muted-foreground">· {list.length}</span>
+              </h3>
+              <CardList items={list} empty="" />
+            </section>
+          ))}
+        </TabsContent>
+      </Tabs>
     </section>
   );
+}
+
+const tabClass =
+  'flex-none rounded-lg px-4 py-2 data-[state=active]:border-border data-[state=active]:bg-card data-[state=active]:text-primary';
+
+function CardList({
+  items,
+  empty,
+}: {
+  items: Schemas['Notification'][] | undefined;
+  empty: string;
+}) {
+  if (items?.length === 0)
+    return (
+      <div className="grid justify-items-center gap-2 rounded-xl border border-dashed bg-card/70 p-8 text-center">
+        <BellOffIcon className="size-6 text-muted-foreground" aria-hidden />
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      </div>
+    );
+  return items?.map((n) => <NotificationCard key={n.id} n={n} />);
 }
 
 /** Channel and sender as pills, when it was sent, then the message, with an accent bar on the left. */
