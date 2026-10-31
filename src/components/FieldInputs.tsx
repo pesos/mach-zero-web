@@ -6,6 +6,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { Markdown } from '@/components/Markdown';
 
 /**
  * Multiple choice with up to this many options shows radio buttons; longer
@@ -31,9 +32,9 @@ export function FieldInputs(props: {
     const label = `${f.label}${f.required ? '' : ' (optional)'}`;
     const helpId = f.help ? `${id}-help` : undefined;
     const help = f.help && (
-      <p id={helpId} className="text-xs whitespace-pre-line text-muted-foreground">
+      <Markdown id={helpId} className="text-xs text-muted-foreground">
         {f.help}
-      </p>
+      </Markdown>
     );
     const wide =
       f.type === 'long_text' ||

@@ -29,6 +29,7 @@ import { OpensOnEventDay } from '@/components/OpensOnEventDay';
 import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
+import { Markdown } from '@/components/Markdown';
 
 type Field = Schemas['PortalSubmission']['fields'][number];
 /** The form helpers expect a scope, which submission forms do not have. */
@@ -131,7 +132,9 @@ function SubmissionCard({ submission: s }: { submission: Schemas['PortalSubmissi
           )}
         </CardTitle>
         {s.description && (
-          <CardDescription className="whitespace-pre-line">{s.description}</CardDescription>
+          <CardDescription>
+            <Markdown>{s.description}</Markdown>
+          </CardDescription>
         )}
         {s.deadline && (
           <p className={cn('text-sm', pastDeadline ? 'text-destructive' : 'text-muted-foreground')}>

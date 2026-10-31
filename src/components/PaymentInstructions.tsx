@@ -1,6 +1,7 @@
 import { usePortalInfo } from '@eventkit/sdk/react';
 import { FileTextIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Markdown } from '@/components/Markdown';
 
 const IMAGE = /\.(jpe?g|png|webp)(\?|$)/i;
 
@@ -22,7 +23,7 @@ export function PaymentInstructions() {
     >
       <div className="grid content-start gap-3">
         {paymentInstructions && (
-          <p className="leading-relaxed whitespace-pre-line">{paymentInstructions}</p>
+          <Markdown className="leading-relaxed">{paymentInstructions}</Markdown>
         )}
         {paymentInstructionsUrl &&
           (IMAGE.test(new URL(paymentInstructionsUrl).pathname) ? (
