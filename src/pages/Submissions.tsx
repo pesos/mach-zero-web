@@ -31,6 +31,7 @@ import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { Markdown } from '@/components/Markdown';
+import { ConfirmedOnly } from '@/components/ConfirmedOnly';
 
 type Field = Schemas['PortalSubmission']['fields'][number];
 /** The form helpers expect a scope, which submission forms do not have. */
@@ -39,7 +40,12 @@ const asFields = (fields: Field[]) => fields.map((f) => ({ ...f, scope: 'team' a
 /** What a team hands in per round: participants fill the forms, judges and admins read them. */
 export function Submissions() {
   const who = useWho();
-  if (who.kind === 'participant') return <ParticipantSubmissions />;
+  if (who.kind === 'participant')
+    return (
+      <ConfirmedOnly what="Submissions">
+        <ParticipantSubmissions />
+      </ConfirmedOnly>
+    );
   if (who.kind) {
     return (
       <StaffOnly allowed="judge">

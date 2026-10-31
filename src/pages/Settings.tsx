@@ -131,7 +131,7 @@ function LinkSafety({ me }: { me: Schemas['Me'] }) {
           >
             My link leaked: give me a new one
           </ConfirmButton>
-          {ek.portal.me.push.isSupported() && (
+          {me.confirmed && ek.portal.me.push.isSupported() && (
             <Button variant="outline" onClick={() => push.mutate(undefined)}>
               <BellRingIcon />
               {push.isSuccess ? 'Urgent alerts on' : 'Get urgent alerts on this device'}

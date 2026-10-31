@@ -17,6 +17,7 @@ import { OpensOnEventDay } from '@/components/OpensOnEventDay';
 import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
+import { ConfirmedOnly } from '@/components/ConfirmedOnly';
 
 /** Averages can be fractional: one decimal at most. */
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
@@ -27,7 +28,12 @@ const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
  */
 export function Leaderboard() {
   const who = useWho();
-  if (who.kind === 'participant') return <ParticipantBoard />;
+  if (who.kind === 'participant')
+    return (
+      <ConfirmedOnly what="The leaderboard and results">
+        <ParticipantBoard />
+      </ConfirmedOnly>
+    );
   if (who.kind) return <StaffBoard />;
   return (
     <Alert>

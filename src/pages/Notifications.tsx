@@ -33,11 +33,17 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
+import { ConfirmedOnly } from '@/components/ConfirmedOnly';
 
 /** The notification feed: a participant's (through their link) or staff's, who can also send. */
 export function Notifications() {
   const who = useWho();
-  if (who.kind === 'participant') return <ParticipantFeed />;
+  if (who.kind === 'participant')
+    return (
+      <ConfirmedOnly what="Notifications">
+        <ParticipantFeed />
+      </ConfirmedOnly>
+    );
   if (who.kind) return <StaffFeed />;
   return (
     <Alert>

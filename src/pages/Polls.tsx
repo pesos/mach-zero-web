@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
+import { ConfirmedOnly } from '@/components/ConfirmedOnly';
 
 type Poll = Schemas['Poll'];
 type Vote = { poll: string; option: string };
@@ -20,7 +21,12 @@ type Vote = { poll: string; option: string };
 /** Polls: a participant's (through their link) or staff's, for the roles each poll is for. */
 export function Polls() {
   const who = useWho();
-  if (who.kind === 'participant') return <ParticipantPolls />;
+  if (who.kind === 'participant')
+    return (
+      <ConfirmedOnly what="Polls">
+        <ParticipantPolls />
+      </ConfirmedOnly>
+    );
   if (who.kind) return <StaffPolls />;
   return (
     <Alert>

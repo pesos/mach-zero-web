@@ -105,3 +105,21 @@ describe('before the event day', () => {
     expect(screen.queryByRole('link', { name: 'Leaderboard' })).not.toBeInTheDocument();
   });
 });
+
+describe('before the team is confirmed', () => {
+  it('holds back polls, notifications, submissions and the leaderboard', async () => {
+    const session = asParticipant({ confirmed: false }, { polls: [poll()] });
+    renderPortal('/polls', { session });
+    expect(
+      await screen.findByRole('heading', { name: 'Polls open once your team is confirmed' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup', { name: 'Lunch?' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'See where your registration stands' }),
+    ).toBeInTheDocument();
+    for (const name of ['Polls', 'Submissions', 'Leaderboard', 'Notifications']) {
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
+    }
+    expect(screen.getByRole('link', { name: 'My registration' })).toBeInTheDocument();
+  });
+});

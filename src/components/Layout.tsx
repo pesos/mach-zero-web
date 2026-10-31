@@ -25,6 +25,7 @@ import { useActivitiesOpen } from '@/lib/event-day';
 import { basePath } from '@/lib/paths';
 import { forgetSession, useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
+import { useTeamConfirmed } from '@/lib/confirmed';
 
 type Section = { to: string; label: string; icon: LucideIcon };
 
@@ -36,9 +37,11 @@ export function Layout() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  // Participants get submissions and the leaderboard from the event day; polls any time.
+  // Participants get polls, notifications, submissions and the leaderboard once
+  // their team is confirmed; submissions and the leaderboard also wait for the event day.
   const day = useActivitiesOpen();
-  const activities = who.kind !== 'participant' || day.open;
+  const { confirmed } = useTeamConfirmed();
+  const activities = who.kind !== 'participant' || (day.open && confirmed);
   const sections: Section[] = [];
   if (who.kind === 'participant')
     sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
@@ -46,7 +49,7 @@ export function Layout() {
   if (who.canJudge) sections.push({ to: '/judge', label: 'Judge', icon: GavelIcon });
   if ((who.kind === 'participant' && activities) || who.canJudge)
     sections.push({ to: '/submissions', label: 'Submissions', icon: FileTextIcon });
-  if (who.kind) {
+  if (who.kind && confirmed) {
     sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
     if (activities) sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
     sections.push({ to: info.paths.notifications, label: 'Notifications', icon: BellIcon });
@@ -133,7 +136,7 @@ export function Layout() {
               </span>
               <img src="/silicon.png" alt="Silicon" className="size-8 object-contain sm:size-10" />
             </div>
-            {who.kind ? <NotificationBell /> : null}
+            {who.kind && confirmed ? <NotificationBell /> : null}
             {who.kind ? (
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>

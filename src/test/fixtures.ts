@@ -25,6 +25,8 @@ export function me(overrides: Partial<Schemas['Me']> = {}): Schemas['Me'] {
     rsvpEnabled: true,
     activitiesFrom: '2026-01-01T00:00:00.000Z',
     activitiesOpen: true,
+    // Most tests are about what a confirmed participant can do; the gate has its own tests.
+    confirmed: true,
     ...overrides,
   };
 }
