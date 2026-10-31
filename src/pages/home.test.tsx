@@ -21,6 +21,7 @@ describe('the event home page', () => {
     expect(links).toHaveLength(2);
     for (const link of links) {
       expect(link).toHaveAttribute('href', 'https://portal.test/register/reg-token');
+      expect(link).not.toHaveAttribute('target');
     }
     expect(screen.getByRole('list', { name: 'Time left to register' })).toHaveTextContent(
       /\d\dd \d\dh/,
@@ -48,6 +49,14 @@ describe('the event home page', () => {
     expect(screen.getByText('Day 1: 8:00 AM – 7:00 PM')).toBeInTheDocument();
     expect(screen.getByText('Day 2: 7:00 AM – 7:00 PM')).toBeInTheDocument();
     expect(screen.getByText(/At least two CSE students per team/)).toBeInTheDocument();
+    const sponsors = screen.getByRole('region', { name: 'Sponsors' });
+    expect(within(sponsors).getByRole('img', { name: 'CraftifAI' })).toBeInTheDocument();
+    const partners = screen.getByRole('region', { name: 'Partners' });
+    expect(
+      within(partners)
+        .getAllByRole('img')
+        .map((i) => i.getAttribute('alt')),
+    ).toEqual(['Absurd Industries', 'FOSS United']);
   });
 
   it('says when registration runs if it is closed, and leaves out a missing fee', async () => {

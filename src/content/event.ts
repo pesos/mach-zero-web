@@ -31,6 +31,20 @@ export const goodToKnow: { title: string; body: string }[] = [
   },
 ];
 
+/** Logos sit on a tile of their own background (#f7f7f7), since the portal is dark. */
+export type Sponsor = { name: string; logo: string };
+
+export const sponsors: { title: string; items: Sponsor[] }[] = [
+  { title: 'Sponsors', items: [{ name: 'CraftifAI', logo: '/sponsors/craftifai.webp' }] },
+  {
+    title: 'Partners',
+    items: [
+      { name: 'Absurd Industries', logo: '/sponsors/absurd-industries.webp' },
+      { name: 'FOSS United', logo: '/sponsors/foss-united.webp' },
+    ],
+  },
+];
+
 export type Slot = { time: string; title: string; kind?: 'round' | 'talk' | 'break' };
 
 export const schedule: Slot[][] = [
