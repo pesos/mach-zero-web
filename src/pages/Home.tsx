@@ -100,7 +100,7 @@ export function Home() {
                 {group.items.map((s) => (
                   <li
                     key={s.name}
-                    className="flex h-32 w-full items-center justify-center p-3 sm:w-[calc(50%-0.375rem)]"
+                    className="flex h-24 w-[calc(50%-0.375rem)] items-center justify-center p-2 sm:h-32 sm:p-3"
                   >
                     <img
                       src={s.logo}
