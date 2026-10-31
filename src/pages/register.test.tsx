@@ -149,7 +149,27 @@ describe('registering a team', () => {
       ),
       http.post(`${P}/register`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json(registered, { status: 201 });
+        // A receipt came with it: the API returns its proof, waiting for review.
+        return HttpResponse.json(
+          {
+            ...registered,
+            payment: {
+              ...registered.payment,
+              proof: {
+                id: 'pp1',
+                teamId: 't1',
+                status: 'pending',
+                amount: 40000,
+                currency: 'INR',
+                memberCount: 2,
+                uploadedAt: '2026-10-20T10:00:00.000Z',
+                verifiedAt: null,
+                rejectionNote: null,
+              },
+            },
+          },
+          { status: 201 },
+        );
       }),
     );
     renderPortal('/register/reg-token');
@@ -216,7 +236,16 @@ describe('registering a team', () => {
     expect(screen.getByText('Each member gets their own link by email')).toBeInTheDocument();
     expect(screen.getByText('Your personal link')).toBeInTheDocument();
     expect(screen.queryByText('PX-0002')).not.toBeInTheDocument();
-    expect(screen.getByText(/Check the spam/)).toBeInTheDocument();
+    expect(screen.getByText('spam or promotions folder')).toBeInTheDocument();
+    expect(screen.queryByText(/Nobody else sees your link/)).not.toBeInTheDocument();
+    // The team's card comes before the email one.
+    expect(
+      screen
+        .getByText('Byte Club is registered.')
+        .compareDocumentPosition(screen.getByText('Each member gets their own link by email')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByText('Payment confirmation pending')).toBeInTheDocument();
     // QR codes wait for confirmation.
     expect(screen.queryByTitle(/check-in QR code/)).not.toBeInTheDocument();
   });
@@ -244,6 +273,8 @@ describe('registering a team', () => {
     await user.click(copy);
     expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe('https://portal.test/me/ek_a');
+    // Nothing to pay: no payment pending.
+    expect(screen.queryByText('Payment confirmation pending')).not.toBeInTheDocument();
   });
 
   it('asks phone questions with a phone keypad, numbers without spinner arrows', async () => {

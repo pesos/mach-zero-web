@@ -306,26 +306,32 @@ function Registered({ result }: { result: Result }) {
   const link = leader?.link;
   return (
     <div className="grid gap-6">
-      <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
-        <MailIcon className="text-primary" />
-        <AlertTitle className="text-base">Each member gets their own link by email</AlertTitle>
-        <AlertDescription className="text-foreground">
-          <p>
-            We've emailed every member their participant ID and personal link. Nobody else sees your
-            link, and you don't see theirs.
-          </p>
-          <p className="font-medium">
-            Not there in a few minutes? Check the spam or promotions folder.
-          </p>
-        </AlertDescription>
-      </Alert>
-      <Alert className="border-success/40">
+      <Alert className="border-success/40 [&>svg]:size-5">
         <CircleCheckIcon className="text-success" />
-        <AlertTitle>{result.team.name} is registered.</AlertTitle>
+        <AlertTitle className="line-clamp-none flex flex-wrap items-center justify-between gap-2 text-lg font-semibold">
+          {result.team.name} is registered.
+          {result.payment.proof?.status === 'pending' && (
+            <Badge variant="outline" className="border-primary/50 bg-primary/10 text-primary">
+              <span className="size-1.5 rounded-full bg-primary" aria-hidden />
+              Payment confirmation pending
+            </Badge>
+          )}
+        </AlertTitle>
         <AlertDescription>
           Your personal link is shown below only once: save it now (screenshot or copy). It lets you
           check your status, RSVP and vote. Your check-in QR code appears there once the team is
           confirmed.
+        </AlertDescription>
+      </Alert>
+      <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
+        <MailIcon className="text-primary" />
+        <AlertTitle className="text-base">Each member gets their own link by email</AlertTitle>
+        <AlertDescription className="text-foreground">
+          <p>We've emailed every member their participant ID and personal link.</p>
+          <p>
+            Not there in a few minutes? Check the{' '}
+            <strong className="font-bold">spam or promotions folder</strong>.
+          </p>
         </AlertDescription>
       </Alert>
       {leader && (
