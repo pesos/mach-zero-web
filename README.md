@@ -22,7 +22,7 @@ cd ../mach-one-web && npm install ./vendor/eventkit-sdk-<version>.tgz
 ```
 
 Delete the old tarball if the version changed. If it didn't, rename the new
-tarball (e.g. `eventkit-sdk-0.1.0-core-0.11.0.tgz`) and install that: Vercel's
+tarball (e.g. `eventkit-sdk-0.1.0-failover.tgz`) and install that: Vercel's
 build cache keeps the old SDK while the file name and version stay the same. Once the SDK is published,
 replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
 
@@ -85,7 +85,9 @@ only when all five variables above are set, and otherwise prints a skip notice.
 
 ## Deploy
 
-A Vercel project with this folder as its root. Set `VITE_EVENTKIT_API_URL`,
+A Vercel project with this folder as its root. Set `VITE_EVENTKIT_API_URL`
+(one address, or several comma-separated with the primary first: the SDK moves
+to the next while the primary is down),
 `VITE_EVENTKIT_EVENT_ID`, `VITE_EVENTKIT_API_KEY` and `VITE_REGISTER_URL` (the
 registration link, for the Register buttons) for the Mach Zero event,
 then put the deployment's URL in the console (event → Portal & settings).
