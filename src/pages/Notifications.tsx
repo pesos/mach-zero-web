@@ -12,7 +12,6 @@ import {
   BellPlusIcon,
   BellRingIcon,
   CheckIcon,
-  ChevronDownIcon,
   ClockIcon,
   HashIcon,
   InfoIcon,
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
+import { FeedTabs, groupCounts } from '@/components/FeedTabs';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -27,19 +27,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
@@ -240,103 +230,40 @@ function SendForm({ channels }: { channels: Schemas['Channel'][] }) {
 }
 
 function Feed({ items, error }: { items: Schemas['Notification'][] | undefined; error: unknown }) {
-  const [view, setView] = useState<'all' | 'urgent' | 'channel'>('all');
-  const [channelId, setChannelId] = useState<string>();
   if (!items && !error) return <CardsSkeleton label="Loading notifications" />;
-  const urgent = items?.filter((n) => n.priority === 'urgent') ?? [];
-  const channels = new Map<string, { name: string; count: number }>();
-  for (const n of items ?? []) {
-    const c = channels.get(n.channel.id);
-    channels.set(n.channel.id, { name: n.channel.name, count: (c?.count ?? 0) + 1 });
-  }
-  const picked = view === 'channel' && channelId ? channels.get(channelId) : undefined;
+  const all = items ?? [];
   return (
     <section aria-label="Notifications" className="grid gap-3">
       <ErrorText error={error} />
-      <Tabs value={view} onValueChange={(v) => setView(v as 'all' | 'urgent')} className="gap-4">
-        <div className="flex flex-wrap items-center gap-1 border-b pb-3">
-          <TabsList className="h-auto gap-1 bg-transparent p-0">
-            <TabsTrigger value="all" className={tabClass}>
-              All
-              <Badge variant="secondary" className="rounded-md px-1.5 tabular-nums">
-                {items?.length ?? 0}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="urgent" className={tabClass}>
-              Urgent
-            </TabsTrigger>
-          </TabsList>
-          {/* Not a tab: it asks which channel first, then shows that channel. */}
-          {/* Not modal: a modal menu locks scrolling, hiding the scrollbar and shifting the page. */}
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                data-state={view === 'channel' ? 'active' : 'inactive'}
-                className={cn(
-                  'h-auto rounded-lg border border-transparent px-4 py-2 font-medium text-muted-foreground',
-                  'data-[state=active]:border-border data-[state=active]:bg-card data-[state=active]:text-primary',
-                )}
-              >
-                {picked ? (
-                  <>
-                    <HashIcon />
-                    {picked.name}
-                  </>
-                ) : (
-                  'Channels'
-                )}
-                <ChevronDownIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-48">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Show a channel
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {channels.size === 0 ? (
-                <p className="px-2 py-1.5 text-sm text-muted-foreground">No channels yet.</p>
-              ) : (
-                <DropdownMenuRadioGroup
-                  value={view === 'channel' ? channelId : undefined}
-                  onValueChange={(id) => {
-                    setChannelId(id);
-                    setView('channel');
-                  }}
-                >
-                  {[...channels].map(([id, c]) => (
-                    <DropdownMenuRadioItem key={id} value={id}>
-                      <HashIcon className="text-muted-foreground" />
-                      {c.name}
-                      <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                        {c.count}
-                      </span>
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <TabsContent value="all" className="grid gap-3">
-          <CardList items={items} empty="No notifications yet." />
-        </TabsContent>
-        <TabsContent value="urgent" className="grid gap-3">
-          <CardList items={items && urgent} empty="No urgent notifications." />
-        </TabsContent>
-        <TabsContent value="channel" className="grid gap-3">
-          <CardList
-            items={items?.filter((n) => n.channel.id === channelId)}
-            empty="Nothing in this channel yet."
-          />
-        </TabsContent>
-      </Tabs>
+      <FeedTabs
+        total={all.length}
+        filter="Urgent"
+        groups={{
+          label: 'Channels',
+          menuLabel: 'Show a channel',
+          icon: HashIcon,
+          items: groupCounts(all, (n) => n.channel),
+        }}
+      >
+        {(view) =>
+          view.kind === 'all' ? (
+            <CardList items={items} empty="No notifications yet." />
+          ) : view.kind === 'filter' ? (
+            <CardList
+              items={items && all.filter((n) => n.priority === 'urgent')}
+              empty="No urgent notifications."
+            />
+          ) : (
+            <CardList
+              items={all.filter((n) => n.channel.id === view.id)}
+              empty="Nothing in this channel yet."
+            />
+          )
+        }
+      </FeedTabs>
     </section>
   );
 }
-
-const tabClass =
-  'flex-none rounded-lg px-4 py-2 data-[state=active]:border-border data-[state=active]:bg-card data-[state=active]:text-primary';
 
 function CardList({
   items,

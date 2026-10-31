@@ -17,6 +17,7 @@ import {
 import { CheckIcon, FileTextIcon, InfoIcon, LockIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
+import { FeedTabs, groupCounts } from '@/components/FeedTabs';
 import { FieldInputs } from '@/components/FieldInputs';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { StaffOnly } from '@/components/StaffOnly';
@@ -79,8 +80,43 @@ function ParticipantSubmissionList() {
   if (subs.isPending) return <CardsSkeleton label="Loading your submissions" count={2} />;
   if (subs.isError) return <ErrorText error={subs.error} />;
   if (subs.data.length === 0) return <Empty />;
-  const rounds = new Map<string, { name: string; items: typeof subs.data }>();
-  for (const s of subs.data) {
+  const all = subs.data;
+  return (
+    <FeedTabs
+      total={all.length}
+      filter="Open"
+      groups={{
+        label: 'Rounds',
+        menuLabel: 'Show a round',
+        items: groupCounts(all, (s) => s.round),
+      }}
+    >
+      {(view) =>
+        view.kind === 'all' ? (
+          <ByRound items={all} />
+        ) : view.kind === 'filter' ? (
+          <ByRound items={all.filter((s) => s.open)} empty="Nothing open right now." />
+        ) : (
+          all
+            .filter((s) => s.round.id === view.id)
+            .map((s) => <SubmissionCard key={s.id} submission={s} />)
+        )
+      }
+    </FeedTabs>
+  );
+}
+
+/** Submissions under a heading per round, in the order they came. */
+function ByRound({ items, empty }: { items: Schemas['PortalSubmission'][]; empty?: string }) {
+  if (items.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed bg-card/70 p-8 text-center text-sm text-muted-foreground">
+        {empty}
+      </p>
+    );
+  }
+  const rounds = new Map<string, { name: string; items: typeof items }>();
+  for (const s of items) {
     const group = rounds.get(s.round.id) ?? { name: s.round.name, items: [] };
     group.items.push(s);
     rounds.set(s.round.id, group);
@@ -206,19 +242,33 @@ function StaffSubmissions() {
   if (subs.isPending) return <CardsSkeleton label="Loading submissions" count={2} />;
   if (subs.isError) return <ErrorText error={subs.error} />;
   if (subs.data.length === 0) return <Empty />;
-  return subs.data.map((s) => (
-    <Card key={s.id}>
-      <CardHeader>
-        <CardTitle className="text-base">{s.title}</CardTitle>
-        <CardDescription>
-          {s.round.name} · {s.entryCount} {s.entryCount === 1 ? 'entry' : 'entries'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Entries id={s.id} fields={s.fields} />
-      </CardContent>
-    </Card>
-  ));
+  const all = subs.data;
+  return (
+    <FeedTabs
+      total={all.length}
+      groups={{
+        label: 'Rounds',
+        menuLabel: 'Show a round',
+        items: groupCounts(all, (s) => s.round),
+      }}
+    >
+      {(view) =>
+        (view.kind === 'group' ? all.filter((s) => s.round.id === view.id) : all).map((s) => (
+          <Card key={s.id}>
+            <CardHeader>
+              <CardTitle className="text-base">{s.title}</CardTitle>
+              <CardDescription>
+                {s.round.name} · {s.entryCount} {s.entryCount === 1 ? 'entry' : 'entries'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Entries id={s.id} fields={s.fields} />
+            </CardContent>
+          </Card>
+        ))
+      }
+    </FeedTabs>
+  );
 }
 
 function Entries({ id, fields }: { id: string; fields: Pick<Field, 'id' | 'label' | 'type'>[] }) {
