@@ -133,18 +133,12 @@ describe('a member’s page', () => {
     const card = asha.closest<HTMLElement>('[data-slot="card"]')!;
     expect(within(card).getByText('Registered')).toBeInTheDocument();
     expect(card).toHaveTextContent(/^Team Byte Club/);
-    // Team first, then the member's own registration, then cancel.
-    const order = [
-      card,
-      screen.getByText(/Participant ID/).closest('[data-slot="card"]')!,
-      screen.getByRole('button', { name: 'Cancel my registration' }),
-    ];
+    // Team first, then the member's own registration; cancelling lives in settings.
+    const own = screen.getByText(/Participant ID/).closest('[data-slot="card"]')!;
+    expect(card.compareDocumentPosition(own) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(
-      order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+      screen.queryByRole('button', { name: /Cancel my registration/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('says a cancelled registration is cancelled and offers no cancel', async () => {
@@ -153,38 +147,6 @@ describe('a member’s page', () => {
     expect(
       screen.queryByRole('button', { name: /Cancel my registration/ }),
     ).not.toBeInTheDocument();
-  });
-
-  it('cancels only after the email is confirmed', async () => {
-    let status: 'registered' | 'cancelled' = 'registered';
-    const session = asParticipant();
-    server.use(
-      http.get(`${P}/me`, () => HttpResponse.json(me({ status }))),
-      http.post(`${P}/me/cancel`, async ({ request }) => {
-        const sent = (await request.json()) as { confirm: string };
-        if (sent.confirm === 'asha@example.com') status = 'cancelled';
-        return status === 'cancelled'
-          ? HttpResponse.json(me({ status }))
-          : apiError(
-              403,
-              'CONFIRMATION_MISMATCH',
-              'That is not the email or phone you registered with.',
-            );
-      }),
-    );
-    renderPortal('/me', { session });
-    await userEvent.click(await screen.findByRole('button', { name: 'Cancel my registration' }));
-    expect(screen.getByText(/This cancels only your registration\./)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Keep it' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel my registration' }));
-    const input = screen.getByLabelText('Email to confirm');
-    await userEvent.type(input, 'wrong@example.com');
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel registration' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('That is not the email or phone');
-    await userEvent.clear(input);
-    await userEvent.type(input, 'asha@example.com');
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel registration' }));
-    expect(await screen.findByText('This registration is cancelled.')).toBeInTheDocument();
   });
 });
 
@@ -217,9 +179,6 @@ describe('the team leader’s page', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Make new link' }));
     expect(await screen.findByText('New link emailed to Ravi')).toBeInTheDocument();
     expect(asked).toBe('r2');
-    expect(
-      screen.getByRole('button', { name: 'Cancel the team’s registration' }),
-    ).toBeInTheDocument();
   });
 
   it.each([

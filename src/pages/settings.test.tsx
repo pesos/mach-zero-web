@@ -1,8 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { asParticipant, asStaff, team, teamMember } from '@/test/fixtures';
+import { asParticipant, asStaff, me, team, teamMember } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, P, server, token } from '@/test/server';
 
@@ -108,5 +108,50 @@ describe('settings', () => {
     await userEvent.click(submit);
     expect(await screen.findByRole('alert')).toHaveTextContent('That is not your email or phone.');
     expect(sent).toEqual({ registrationId: 'r2', confirm: 'asha@example.com' });
+  });
+
+  it('cancels only after the email is confirmed', async () => {
+    let status: 'registered' | 'cancelled' = 'registered';
+    const session = asParticipant();
+    server.use(
+      http.get(`${P}/me`, () => HttpResponse.json(me({ status }))),
+      http.post(`${P}/me/cancel`, async ({ request }) => {
+        const sent = (await request.json()) as { confirm: string };
+        if (sent.confirm === 'asha@example.com') status = 'cancelled';
+        return status === 'cancelled'
+          ? HttpResponse.json(me({ status }))
+          : apiError(
+              403,
+              'CONFIRMATION_MISMATCH',
+              'That is not the email or phone you registered with.',
+            );
+      }),
+    );
+    renderPortal('/settings', { session });
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancel my registration' }));
+    expect(screen.getByText(/This cancels only your registration\./)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel my registration' }));
+    const input = screen.getByLabelText('Email to confirm');
+    await userEvent.type(input, 'wrong@example.com');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel registration' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('That is not the email or phone');
+    await userEvent.clear(input);
+    await userEvent.type(input, 'asha@example.com');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel registration' }));
+    await waitFor(() => expect(screen.queryByText('Cancel registration')).not.toBeInTheDocument());
+  });
+
+  it('offers the leader to cancel the whole team', async () => {
+    renderPortal('/settings', { session: asParticipant({ isLeader: true }) });
+    expect(
+      await screen.findByRole('button', { name: 'Cancel the team’s registration' }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers no cancel once the registration is cancelled', async () => {
+    renderPortal('/settings', { session: asParticipant({ status: 'cancelled' }) });
+    expect(await screen.findByText('Your personal link')).toBeInTheDocument();
+    expect(screen.queryByText('Cancel registration')).not.toBeInTheDocument();
   });
 });

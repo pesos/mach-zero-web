@@ -1,6 +1,6 @@
 import { formatIST, type Schemas } from '@eventkit/sdk';
 import { useEventKit, useMe, useMyTeam, usePortalMutation } from '@eventkit/sdk/react';
-import { BellRingIcon, InfoIcon, KeyRoundIcon, UsersRoundIcon } from 'lucide-react';
+import { BellRingIcon, InfoIcon, KeyRoundIcon, UserRoundXIcon, UsersRoundIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmButton } from '@/components/ConfirmButton';
 import { ErrorText } from '@/components/ErrorText';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { useWho } from '@/lib/staff';
 
-/** A participant's settings: handing over the team, and their personal link. */
+/** A participant's settings: handing over the team, their personal link, and cancelling. */
 export function Settings() {
   const who = useWho();
   if (who.kind === 'participant') return <ParticipantSettings />;
@@ -35,6 +35,9 @@ function ParticipantSettings() {
     <>
       {me.data.isLeader && <HandOver />}
       <LinkSafety me={me.data} />
+      {me.data.status !== 'cancelled' && me.data.status !== 'checked_in' && (
+        <CancelCard me={me.data} />
+      )}
     </>
   );
 }
@@ -139,6 +142,64 @@ function LinkSafety({ me }: { me: Schemas['Me'] }) {
           <NewLink title="Your new link. Save it: the old one no longer works." link={reset.data} />
         )}
         <ErrorText error={reset.error ?? push.error} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Cancelling: the leader's cancels the whole team, a member's only their own. */
+function CancelCard({ me }: { me: Schemas['Me'] }) {
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const cancel = usePortalMutation((portal, c: string) => portal.me.cancel(c));
+  const label = me.isLeader ? 'Cancel the team’s registration' : 'Cancel my registration';
+  return (
+    <Card className="border-destructive/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base text-destructive">
+          <UserRoundXIcon className="size-4" />
+          Cancel registration
+        </CardTitle>
+        <CardDescription>
+          {me.isLeader
+            ? 'You lead the team: this cancels everyone who has not checked in.'
+            : 'This cancels only your registration.'}
+          {open && ' Type the email you registered with to confirm.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {open ? (
+          <form
+            className="grid gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              cancel.mutate(confirm);
+            }}
+          >
+            <Input
+              aria-label="Email to confirm"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+            <ErrorText error={cancel.error} />
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" variant="destructive" disabled={!confirm || cancel.isPending}>
+                Cancel registration
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Keep it
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setOpen(true)}
+          >
+            {label}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

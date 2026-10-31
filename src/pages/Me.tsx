@@ -75,7 +75,6 @@ export function Me() {
     <>
       {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
       <Registration me={data} />
-      {data.status !== 'cancelled' && data.status !== 'checked_in' && <CancelCard me={data} />}
     </>
   );
 }
@@ -339,62 +338,6 @@ function LeaderTeam() {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function CancelCard({ me }: { me: Me }) {
-  const [open, setOpen] = useState(false);
-  const [confirm, setConfirm] = useState('');
-  const cancel = usePortalMutation((portal, c: string) => portal.me.cancel(c));
-  if (!open) {
-    return (
-      <div className="flex justify-center">
-        <Button
-          variant="ghost"
-          className="bg-card/80 text-muted-foreground backdrop-blur-md hover:text-destructive"
-          onClick={() => setOpen(true)}
-        >
-          {me.isLeader ? 'Cancel the team’s registration' : 'Cancel my registration'}
-        </Button>
-      </div>
-    );
-  }
-  return (
-    <Card className="border-destructive/40">
-      <CardHeader>
-        <CardTitle className="text-base text-destructive">Cancel registration</CardTitle>
-        <CardDescription>
-          {me.isLeader
-            ? 'You lead the team: this cancels everyone who has not checked in.'
-            : 'This cancels only your registration.'}{' '}
-          Type the email you registered with to confirm.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="grid gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            cancel.mutate(confirm);
-          }}
-        >
-          <Input
-            aria-label="Email to confirm"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-          <ErrorText error={cancel.error} />
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="destructive" disabled={!confirm || cancel.isPending}>
-              Cancel registration
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Keep it
-            </Button>
-          </div>
-        </form>
       </CardContent>
     </Card>
   );
