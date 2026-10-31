@@ -22,7 +22,7 @@ cd ../mach-one-web && npm install ./vendor/eventkit-sdk-<version>.tgz
 ```
 
 Delete the old tarball if the version changed. If it didn't, rename the new
-tarball (e.g. `eventkit-sdk-0.1.0-failover-recheck.tgz`) and install that: Vercel's
+tarball (e.g. `eventkit-sdk-0.1.0-dropdown.tgz`) and install that: Vercel's
 build cache keeps the old SDK while the file name and version stay the same. Once the SDK is published,
 replace this with a normal `"@eventkit/sdk": "^x.y.z"` dependency.
 

@@ -7,7 +7,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-/** Up to this many options show as radio buttons; longer lists as a dropdown. */
+/**
+ * Multiple choice with up to this many options shows radio buttons; longer
+ * lists, and every dropdown question, show a dropdown.
+ */
 const MAX_RADIOS = 8;
 
 /**
@@ -82,7 +85,7 @@ export function FieldInputs(props: {
       <div key={f.id} className={cn('grid content-start gap-2', wide && 'sm:col-span-2')}>
         <Label htmlFor={id}>{label}</Label>
         {help}
-        {f.type === 'choice' ? (
+        {f.type === 'choice' || f.type === 'dropdown' ? (
           <NativeSelect
             id={id}
             aria-describedby={helpId}
