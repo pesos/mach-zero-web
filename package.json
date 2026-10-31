@@ -17,7 +17,7 @@
     "email": "tsx scripts/email.ts"
   },
   "dependencies": {
-    "@eventkit/sdk": "file:vendor/eventkit-sdk-0.1.0-failover.tgz",
+    "@eventkit/sdk": "file:vendor/eventkit-sdk-0.1.0-failover-recheck.tgz",
     "@tanstack/react-query": "^5.104.5",
     "@yudiel/react-qr-scanner": "^2.6.0",
     "class-variance-authority": "^0.7.1",
