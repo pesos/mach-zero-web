@@ -267,7 +267,8 @@ function Feed({ items, error }: { items: Schemas['Notification'][] | undefined; 
             </TabsTrigger>
           </TabsList>
           {/* Not a tab: it asks which channel first, then shows that channel. */}
-          <DropdownMenu>
+          {/* Not modal: a modal menu locks scrolling, hiding the scrollbar and shifting the page. */}
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
