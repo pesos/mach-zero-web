@@ -105,7 +105,10 @@ export function Home() {
                     <img
                       src={s.logo}
                       alt={s.name}
-                      className="max-h-full max-w-full object-contain"
+                      className={cn(
+                        'max-h-full max-w-full rounded-md object-contain',
+                        s.framed && 'rounded-xl bg-[#f7f7f7] p-2 sm:p-3',
+                      )}
                     />
                   </li>
                 ))}

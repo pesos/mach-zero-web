@@ -31,11 +31,17 @@ export const goodToKnow: { title: string; body: string }[] = [
   },
 ];
 
-/** Logos sit straight on the portal's dark background: each is made to read on it. */
-export type Sponsor = { name: string; logo: string };
+/**
+ * Logos sit straight on the portal's dark background. `framed`: the logo has
+ * its own light background, so it gets a rounded light frame to match.
+ */
+export type Sponsor = { name: string; logo: string; framed?: boolean };
 
 export const sponsors: { title: string; items: Sponsor[] }[] = [
-  { title: 'Sponsors', items: [{ name: 'CraftifAI', logo: '/sponsors/craftifai.webp' }] },
+  {
+    title: 'Sponsors',
+    items: [{ name: 'CraftifAI', logo: '/sponsors/craftifai.webp', framed: true }],
+  },
   {
     title: 'Partners',
     items: [
