@@ -36,7 +36,7 @@ export function Layout() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  // Participants get polls, submissions and the leaderboard from the event day.
+  // Participants get submissions and the leaderboard from the event day; polls any time.
   const day = useActivitiesOpen();
   const activities = who.kind !== 'participant' || day.open;
   const sections: Section[] = [];
@@ -47,10 +47,8 @@ export function Layout() {
   if ((who.kind === 'participant' && activities) || who.canJudge)
     sections.push({ to: '/submissions', label: 'Submissions', icon: FileTextIcon });
   if (who.kind) {
-    if (activities) {
-      sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
-      sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
-    }
+    sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
+    if (activities) sections.push({ to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon });
     sections.push({ to: info.paths.notifications, label: 'Notifications', icon: BellIcon });
   }
   if (who.kind === 'participant')

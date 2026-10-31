@@ -163,9 +163,10 @@ describe('a participant’s submissions', () => {
       await screen.findByRole('heading', { name: 'Submissions open on the day of the event' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Come back on 1 Jan 2099.')).toBeInTheDocument();
-    for (const name of ['Submissions', 'Polls', 'Leaderboard']) {
+    for (const name of ['Submissions', 'Leaderboard']) {
       expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
     }
+    expect(screen.getByRole('link', { name: 'Polls' })).toBeInTheDocument();
   });
 
   it('is read-only with a note once the round is closed', async () => {

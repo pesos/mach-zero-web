@@ -89,7 +89,7 @@ describe('polls', () => {
 });
 
 describe('before the event day', () => {
-  it('tells participants when it opens', async () => {
+  it('still shows participants their polls', async () => {
     const session = asParticipant();
     server.use(
       http.get(P, () =>
@@ -97,10 +97,11 @@ describe('before the event day', () => {
           portalInfo({ event: { ...portalEvent, activitiesFrom: '2099-01-01T00:00:00.000Z' } }),
         ),
       ),
+      http.get(`${P}/me/polls`, () => HttpResponse.json([poll()])),
     );
     renderPortal('/polls', { session });
-    expect(
-      await screen.findByRole('heading', { name: 'Polls open on the day of the event' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('radiogroup', { name: 'Lunch?' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Polls' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Leaderboard' })).not.toBeInTheDocument();
   });
 });
