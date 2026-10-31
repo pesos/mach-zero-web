@@ -311,8 +311,8 @@ function Registered({ result }: { result: Result }) {
         <AlertTitle className="line-clamp-none flex flex-wrap items-center justify-between gap-2 text-lg font-semibold">
           {result.team.name} is registered.
           {result.payment.proof?.status === 'pending' && (
-            <Badge variant="outline" className="border-primary/50 bg-primary/10 text-primary">
-              <span className="size-1.5 rounded-full bg-primary" aria-hidden />
+            <Badge variant="outline" className="border-amber-400/50 bg-amber-400/10 text-amber-300">
+              <span className="size-1.5 rounded-full bg-amber-400" aria-hidden />
               Payment confirmation pending
             </Badge>
           )}
