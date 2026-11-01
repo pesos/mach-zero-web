@@ -12,6 +12,10 @@ export const registerUrl = (): string | null => import.meta.env.VITE_REGISTER_UR
 /** WhatsApp group where people without a team find teammates. */
 export const teamFinderUrl = 'https://chat.whatsapp.com/Fdut7VLniaNKFd4g0dAe99?mode=gi_t';
 
+/** WhatsApp group for event updates, shown to teams once they've registered. */
+export const updatesGroupUrl =
+  'https://chat.whatsapp.com/GpzMBnaZkcb19eDEVzfSSa?s=cl&p=a&mlu=4&ilr=4&iam=2';
+
 export const about = [
   'MachZero is a two-day open-source contribution spree where multidisciplinary student teams work on live, community-maintained hardware and software repositories under the guidance of industry mentors.',
   'Instead of throwaway prototypes, teams fix issues, add features and improve real projects. Standout work is carried forward as pull requests after the event, giving participants a pathway into long-term open-source involvement.',

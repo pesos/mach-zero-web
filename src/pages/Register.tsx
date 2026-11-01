@@ -25,6 +25,7 @@ import { ErrorText } from '@/components/ErrorText';
 import { FieldInputs } from '@/components/FieldInputs';
 import { FormSkeleton } from '@/components/Skeletons';
 import { PaymentInstructions } from '@/components/PaymentInstructions';
+import { UpdatesGroup } from '@/components/UpdatesGroup';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -322,6 +323,7 @@ function Registered({ result }: { result: Result }) {
           team is confirmed.
         </AlertDescription>
       </Alert>
+      <UpdatesGroup />
       <Alert className="border-primary bg-primary/15 [&>svg]:size-5">
         <MailIcon className="text-primary" />
         <AlertTitle className="text-base">We've emailed you every member's link</AlertTitle>

@@ -96,6 +96,7 @@ describe('a member’s page', () => {
     renderPortal('/me', { session });
     expect(await screen.findByTitle('Your check-in QR code')).toBeInTheDocument();
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Join on WhatsApp' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'I will attend' }));
     expect(await screen.findByText('Attending')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: "I can't attend after all" }));
@@ -146,6 +147,7 @@ describe('a member’s page', () => {
   it('says a cancelled registration is cancelled and offers no cancel', async () => {
     renderPortal('/me', { session: asParticipant({ status: 'cancelled' }) });
     expect(await screen.findByText('This registration is cancelled.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Join on WhatsApp' })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /Cancel my registration/ }),
     ).not.toBeInTheDocument();

@@ -235,6 +235,10 @@ describe('registering a team', () => {
     expect(screen.queryByText('Ravi')).not.toBeInTheDocument();
     expect(screen.getByText("We've emailed you every member's link")).toBeInTheDocument();
     expect(screen.getByText('Your personal link')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Join on WhatsApp' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^https:\/\/chat\.whatsapp\.com\//),
+    );
     expect(screen.queryByText('PX-0002')).not.toBeInTheDocument();
     expect(screen.getByText('Not in your inbox? Check spam or promotions.')).toBeInTheDocument();
     expect(screen.queryByText(/Nobody else sees your link/)).not.toBeInTheDocument();

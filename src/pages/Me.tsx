@@ -28,6 +28,7 @@ import { ErrorPage } from '@/components/ErrorPage';
 import { PaymentInstructions } from '@/components/PaymentInstructions';
 import { ListSkeleton, MeSkeleton } from '@/components/Skeletons';
 import { StatusBadge } from '@/components/StatusBadge';
+import { UpdatesGroup } from '@/components/UpdatesGroup';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,6 +84,7 @@ export function Me() {
     <>
       <StagesNotice me={data} />
       <RsvpCard me={data} />
+      {data.status !== 'cancelled' && <UpdatesGroup />}
       {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
       <Registration me={data} />
     </>
