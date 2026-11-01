@@ -33,7 +33,7 @@ export const highlights: { value: string; label: string }[] = [
 export const goodToKnow: { title: string; body: string }[] = [
   {
     title: 'Team composition',
-    body: 'At least two CSE students per team. Students from ECE and other branches are encouraged to join.',
+    body: 'At least two CSE or AIML students per team. Students from ECE and other branches are encouraged to join.',
   },
 ];
 
