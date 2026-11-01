@@ -155,7 +155,6 @@ export function Home() {
           {registrationOpen && !who.kind && (
             <div className="flex shrink-0 flex-wrap gap-3">
               {registerUrl() && <RegisterButton />}
-              <TeamFinderButton />
             </div>
           )}
           {who.kind === 'participant' && (
