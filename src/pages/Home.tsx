@@ -101,7 +101,10 @@ export function Home() {
                 {group.items.map((s) => (
                   <li
                     key={s.name}
-                    className="grid w-[calc(50%-0.375rem)] justify-items-center gap-2"
+                    className={cn(
+                      'grid w-[calc(50%-0.375rem)] justify-items-center gap-2',
+                      group.items.length >= 3 && 'sm:w-[calc((100%-1.5rem)/3)]',
+                    )}
                   >
                     <div className="flex h-24 w-full items-center justify-center p-2 sm:h-32 sm:p-3">
                       <img

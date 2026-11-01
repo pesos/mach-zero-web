@@ -53,6 +53,7 @@ export const sponsors: { title: string; items: Sponsor[] }[] = [
     items: [
       { name: 'Absurd Industries', logo: '/sponsors/absurd-industries.webp' },
       { name: 'FOSS United', logo: '/sponsors/foss-united.webp' },
+      { name: 'PCB Cupid', logo: '/sponsors/pcb-cupid.webp' },
     ],
   },
 ];

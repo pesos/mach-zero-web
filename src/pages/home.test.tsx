@@ -56,7 +56,7 @@ describe('the event home page', () => {
       within(partners)
         .getAllByRole('img')
         .map((i) => i.getAttribute('alt')),
-    ).toEqual(['Absurd Industries', 'FOSS United']);
+    ).toEqual(['Absurd Industries', 'FOSS United', 'PCB Cupid']);
   });
 
   it('says when registration runs if it is closed, and leaves out a missing fee', async () => {
