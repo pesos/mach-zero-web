@@ -38,7 +38,6 @@ const gate: Schemas['Checkpoint'] = {
   closesAt: null,
   allowRepeat: false,
   poll: null,
-  linkedCheckpointId: null,
   createdAt: '2026-10-20T10:00:00.000Z',
 };
 const lunch: Schemas['Checkpoint'] = { ...gate, id: 'cp-lunch', name: 'Lunch', type: 'meal' };

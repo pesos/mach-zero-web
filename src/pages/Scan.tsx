@@ -1,4 +1,10 @@
-import { describeScan, type ScanResult, type Schemas } from '@eventkit/sdk';
+import {
+  describeScan,
+  type Leaving,
+  leavingFrom,
+  type ScanResult,
+  type Schemas,
+} from '@eventkit/sdk';
 import { useEventQuery, useScanner } from '@eventkit/sdk/react';
 import { Scanner as Camera } from '@yudiel/react-qr-scanner';
 import {
@@ -11,7 +17,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
-import { ExitReasonDialog } from '@/components/ExitReasonDialog';
+import { ExitReasonPanel } from '@/components/ExitReasonPanel';
 import { ScanLog } from '@/components/ScanLog';
 import { StaffOnly } from '@/components/StaffOnly';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -55,7 +61,8 @@ export function Scan() {
 
 /**
  * Check-in: camera, or a typed QR token / participant ID. Keeps going offline
- * from the checkpoint's cached list; exit checkpoints ask why someone is leaving.
+ * from the checkpoint's cached list. At an entry & exit checkpoint, scanning someone
+ * inside asks why they are leaving before the scan is sent.
  */
 function ScanPage() {
   const checkpoints = useEventQuery('checkpoints', (e) => e.checkpoints.list());
@@ -122,7 +129,8 @@ function Scanning({ checkpoint }: { checkpoint: Checkpoint }) {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   /** An exit scan waiting for its reason. */
-  const [leaving, setLeaving] = useState<string | null>(null);
+  /** At a gate: someone inside was scanned; the scan waits for a reason. */
+  const [leaving, setLeaving] = useState<{ code: string; who: Leaving } | null>(null);
   const [pausedUntil, setPausedUntil] = useState(0);
   const canScan = (online || offlineReady) && !busy && !leaving;
 
@@ -136,8 +144,14 @@ function Scanning({ checkpoint }: { checkpoint: Checkpoint }) {
         setError(null);
       }
     } catch (e) {
-      setError(e);
       setResult(null);
+      const who = leavingFrom(e);
+      if (who) {
+        setError(null);
+        setLeaving({ code, who });
+        return;
+      }
+      setError(e);
     } finally {
       setBusy(false);
       if (scanner) setPausedUntil(scanner.pausedUntil);
@@ -145,10 +159,7 @@ function Scanning({ checkpoint }: { checkpoint: Checkpoint }) {
   };
   const submit = (code: string, force = false, exitReason?: string) => {
     if (!scanner) return;
-    if (checkpoint.type === 'exit' && !exitReason) {
-      setLeaving(code);
-      return;
-    }
+    if (exitReason) setLeaving(null);
     void run(() => scanner.scan(code, { force, ...(exitReason ? { exitReason } : {}) }), code);
   };
   const onTyped = (e: FormEvent) => {
@@ -227,6 +238,16 @@ function Scanning({ checkpoint }: { checkpoint: Checkpoint }) {
           Check
         </Button>
       </form>
+      {leaving && (
+        <ExitReasonPanel
+          key={leaving.code}
+          who={leaving.who}
+          reasons={event.data?.event.exitReasons ?? []}
+          busy={busy}
+          onCancel={() => setLeaving(null)}
+          onSubmit={(reason) => submit(leaving.code, true, reason)}
+        />
+      )}
       {result && (
         <div
           role="status"
@@ -283,16 +304,6 @@ function Scanning({ checkpoint }: { checkpoint: Checkpoint }) {
       )}
       <ErrorText error={error} />
       <ScanLog state={state} checkpointId={checkpoint.id} />
-      <ExitReasonDialog
-        code={leaving}
-        reasons={event.data?.event.exitReasons ?? []}
-        onCancel={() => setLeaving(null)}
-        onConfirm={(reason) => {
-          const code = leaving!;
-          setLeaving(null);
-          submit(code, true, reason);
-        }}
-      />
     </div>
   );
 }

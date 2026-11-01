@@ -15,15 +15,14 @@ vi.mock('@yudiel/react-qr-scanner', () => ({
   ),
 }));
 
-const exitCp: Schemas['Checkpoint'] = {
-  id: 'cp-out',
-  name: 'Gate out',
-  type: 'exit',
+const doorCp: Schemas['Checkpoint'] = {
+  id: 'cp-door',
+  name: 'Venue door',
+  type: 'gate',
   opensAt: null,
   closesAt: null,
   allowRepeat: false,
   poll: null,
-  linkedCheckpointId: 'cp-gate',
   createdAt: '2026-10-20T10:00:00.000Z',
 };
 
@@ -46,14 +45,29 @@ describe('stages notice', () => {
   });
 });
 
-describe('exit checkpoints', () => {
-  it('asks why they are leaving, then sends the scan with the reason', async () => {
+describe('entry & exit checkpoints', () => {
+  it('after scanning someone inside, shows who it is and a reason to pick, then sends it', async () => {
     const bodies: { exitReason?: string }[] = [];
     server.use(
-      http.get(`${E}/checkpoints`, () => HttpResponse.json([exitCp])),
+      http.get(`${E}/checkpoints`, () => HttpResponse.json([doorCp])),
       http.get(`${E}/scans`, () => HttpResponse.json([])),
       http.post(`${E}/scans`, async ({ request }) => {
-        bodies.push((await request.json()) as { exitReason?: string });
+        const body = (await request.json()) as { exitReason?: string };
+        bodies.push(body);
+        if (!body.exitReason) {
+          return HttpResponse.json(
+            {
+              error: {
+                code: 'EXIT_REASON_REQUIRED',
+                message: 'Choose why they are leaving.',
+                details: {
+                  participant: { name: 'Ravi', participantCode: 'PX-0002', teamName: 'Byte Club' },
+                },
+              },
+            },
+            { status: 400 },
+          );
+        }
         return HttpResponse.json({
           id: 's1',
           result: 'accepted',
@@ -61,7 +75,7 @@ describe('exit checkpoints', () => {
           scannedAt: '2026-10-31T04:00:00.000Z',
           replayed: false,
           previousScanAt: null,
-          checkpoint: { id: 'cp-out', name: 'Gate out', type: 'exit' },
+          checkpoint: { id: 'cp-door', name: 'Venue door', type: 'gate' },
           meal: null,
           participant: {
             name: 'Ravi',
@@ -70,21 +84,23 @@ describe('exit checkpoints', () => {
             status: 'checked_in',
           },
           reentry: false,
-          exitReason: 'Emergency',
+          exitReason: body.exitReason,
           offline: false,
         });
       }),
     );
-    window.localStorage.setItem('portal.checkpoint', 'cp-out');
+    window.localStorage.setItem('portal.checkpoint', 'cp-door');
     renderPortal('/scan', { session: asStaff('volunteer') });
     await userEvent.click(await screen.findByRole('button', { name: 'Camera sees a code' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Why are they leaving?' });
-    expect(bodies).toHaveLength(0);
-    await userEvent.click(within(dialog).getByRole('combobox', { name: 'Reason' }));
+    const panel = await screen.findByRole('region', { name: 'Going out' });
+    expect(panel).toHaveTextContent('Ravi is going out');
+    expect(within(panel).getByRole('button', { name: 'Mark as left' })).toBeDisabled();
+    await userEvent.click(within(panel).getByRole('combobox', { name: 'Reason' }));
     await userEvent.click(await screen.findByRole('option', { name: 'Emergency' }));
     await userEvent.click(screen.getByRole('button', { name: 'Mark as left' }));
-    expect(await screen.findByRole('status')).toHaveTextContent('Left: Emergency');
-    expect(bodies[0]).toMatchObject({ qrToken: 'qr-ravi', exitReason: 'Emergency' });
+    expect(await screen.findByRole('status')).toHaveTextContent('Out: Emergency');
+    expect(bodies.map((b) => b.exitReason)).toEqual([undefined, 'Emergency']);
+    expect(screen.queryByRole('region', { name: 'Going out' })).toBeNull();
   });
 });
 

@@ -26,7 +26,7 @@ export function Outside() {
   );
 }
 
-/** Everyone who scanned out at an exit and hasn't scanned back in, longest out first. */
+/** Everyone out through an entry & exit checkpoint and not back in, longest out first. */
 function OutsidePage() {
   const outside = useOutside();
   const [now, setNow] = useState(() => Date.now());
@@ -48,8 +48,8 @@ function OutsidePage() {
           )}
         </CardTitle>
         <CardDescription>
-          People who scanned out at an exit and haven&apos;t scanned back in. Refreshes every 15
-          seconds.
+          People who went out through an entry &amp; exit checkpoint and haven&apos;t scanned back
+          in. Refreshes every 15 seconds.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">

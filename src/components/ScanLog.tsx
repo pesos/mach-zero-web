@@ -18,7 +18,6 @@ const REASON: Record<NonNullable<ScanResult['reason']>, string> = {
   closed: 'Closed',
   not_attending: "Not RSVP'd",
   not_checked_in: 'Not checked in',
-  not_inside: 'Already out',
   cancelled: 'Cancelled',
 };
 
