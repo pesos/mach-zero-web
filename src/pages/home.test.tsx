@@ -23,6 +23,12 @@ describe('the event home page', () => {
       expect(link).toHaveAttribute('href', 'https://portal.test/register/reg-token');
       expect(link).not.toHaveAttribute('target');
     }
+    const teamFinders = screen.getAllByRole('link', { name: /Find a team on WhatsApp/ });
+    expect(teamFinders).toHaveLength(2);
+    for (const link of teamFinders) {
+      expect(link).toHaveAttribute('href', expect.stringMatching(/^https:\/\/chat\.whatsapp\.com\//));
+      expect(link).toHaveAttribute('target', '_blank');
+    }
     expect(screen.getByRole('list', { name: 'Time left to register' })).toHaveTextContent(
       /\d\dd \d\dh/,
     );

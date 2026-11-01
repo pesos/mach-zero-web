@@ -9,6 +9,9 @@ export const tagline = 'A 2 day contribution spree.';
  */
 export const registerUrl = (): string | null => import.meta.env.VITE_REGISTER_URL || null;
 
+/** WhatsApp group where people without a team find teammates. */
+export const teamFinderUrl = 'https://chat.whatsapp.com/Fdut7VLniaNKFd4g0dAe99?mode=gi_t';
+
 export const about = [
   'MachZero is a two-day open-source contribution spree where multidisciplinary student teams work on live, community-maintained hardware and software repositories under the guidance of industry mentors.',
   'Instead of throwaway prototypes, teams fix issues, add features and improve real projects. Standout work is carried forward as pull requests after the event, giving participants a pathway into long-term open-source involvement.',

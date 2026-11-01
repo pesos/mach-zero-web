@@ -6,6 +6,7 @@ import {
   ClockIcon,
   type LucideIcon,
   MapPinIcon,
+  MessageCircleIcon,
   UsersIcon,
 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useState } from 'react';
@@ -24,6 +25,7 @@ import {
   type Slot,
   sponsors,
   tagline,
+  teamFinderUrl,
 } from '@/content/event';
 import { basePath } from '@/lib/paths';
 import { useWho } from '@/lib/staff';
@@ -62,7 +64,17 @@ export function Home() {
         </h2>
         <p className="max-w-md text-lg text-balance text-foreground/80">{tagline}</p>
         <RegistrationBadge open={registrationOpen} deadline={event.registrationDeadline} />
-        {registrationOpen && registerUrl() && <RegisterButton />}
+        {registrationOpen && (
+          <div className="grid justify-items-center gap-2">
+            <div className="flex flex-wrap justify-center gap-3">
+              {registerUrl() && <RegisterButton />}
+              <TeamFinderButton />
+            </div>
+            <p className="text-sm text-foreground/70">
+              No team yet? Join the WhatsApp group to find one.
+            </p>
+          </div>
+        )}
       </section>
 
       <ul className="grid gap-3 sm:grid-cols-2">
@@ -141,7 +153,12 @@ export function Home() {
                 : `Registration is not open. It runs ${formatIST(event.registrationStart)} – ${formatIST(event.registrationDeadline)}.`}
             </p>
           </div>
-          {registrationOpen && !who.kind && registerUrl() && <RegisterButton />}
+          {registrationOpen && !who.kind && (
+            <div className="flex shrink-0 flex-wrap gap-3">
+              {registerUrl() && <RegisterButton />}
+              <TeamFinderButton />
+            </div>
+          )}
           {who.kind === 'participant' && (
             <Button asChild size="lg" className="shrink-0">
               <Link to={basePath(paths.me)}>
@@ -240,6 +257,21 @@ function RegisterButton() {
       <a href={registerUrl()!}>
         Register your team
         <ArrowRightIcon />
+      </a>
+    </Button>
+  );
+}
+
+function TeamFinderButton() {
+  return (
+    // Opaque card fill: a see-through outline button disappears into the hero art.
+    <Button
+      asChild
+      size="lg"
+      className="shrink-0 border border-primary bg-card text-primary shadow-md hover:bg-secondary"
+    >
+      <a href={teamFinderUrl} target="_blank" rel="noreferrer">
+        Find a team on WhatsApp
       </a>
     </Button>
   );
