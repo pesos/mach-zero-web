@@ -14,6 +14,12 @@ export const about = [
   'Instead of throwaway prototypes, teams fix issues, add features and improve real projects. Standout work is carried forward as pull requests after the event, giving participants a pathway into long-term open-source involvement.',
 ];
 
+/**
+ * When payment is due, shown with the registration deadline. The event's own
+ * paymentDeadline wins when the API has one (pay-after-shortlist events).
+ */
+export const paymentDeadline = '2026-11-05T15:00:00+05:30';
+
 /** Each day's hours, in day order. */
 export const dailyHours = ['Day 1: 8:00 AM – 7:00 PM', 'Day 2: 7:00 AM – 7:00 PM'];
 

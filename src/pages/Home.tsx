@@ -18,6 +18,7 @@ import {
   dailyHours,
   goodToKnow,
   highlights,
+  paymentDeadline,
   registerUrl,
   schedule,
   type Slot,
@@ -129,7 +130,11 @@ export function Home() {
           <div className="grid gap-2">
             <p className="text-sm leading-relaxed">
               {registrationOpen
-                ? `Registration is open until ${formatIST(event.registrationDeadline)}. Your team leader registers everyone at once.`
+                ? `Registration is open until ${formatIST(event.registrationDeadline)}.${
+                    event.paymentMode === 'none'
+                      ? ''
+                      : ` Payment is due by ${formatIST(event.paymentDeadline ?? paymentDeadline)}.`
+                  } Your team leader registers everyone at once.`
                 : `Registration is not open. It runs ${formatIST(event.registrationStart)} – ${formatIST(event.registrationDeadline)}.`}
             </p>
           </div>
