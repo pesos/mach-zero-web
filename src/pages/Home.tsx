@@ -293,9 +293,10 @@ function istDays(startAt: string, endAt: string): string[] {
 function ScheduleItem({ slot }: { slot: Slot }) {
   return (
     <li className="relative">
+      {/* Centred on the list's 2px border: 20px padding + 2px border + 6px (half the dot) − 1px. */}
       <span
         className={cn(
-          'absolute top-1 -left-[1.6rem] size-3 rounded-full border-2 border-card',
+          'absolute top-1 -left-[27px] size-3 rounded-full border-2 border-card',
           slot.kind === 'round' ? 'bg-primary' : slot.kind === 'talk' ? 'bg-lavender' : 'bg-haze',
         )}
       />
