@@ -6,7 +6,6 @@ import {
   ClockIcon,
   type LucideIcon,
   MapPinIcon,
-  MessageCircleIcon,
   UsersIcon,
 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useState } from 'react';
