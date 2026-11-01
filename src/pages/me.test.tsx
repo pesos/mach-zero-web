@@ -99,6 +99,8 @@ describe('a member’s page', () => {
     await userEvent.click(screen.getByRole('button', { name: 'I will attend' }));
     expect(await screen.findByText('Attending')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: "I can't attend after all" }));
+    // Withdrawing asks first.
+    await userEvent.click(await screen.findByRole('button', { name: "I can't attend" }));
     expect(await screen.findByRole('button', { name: 'I will attend' })).toBeInTheDocument();
   });
 

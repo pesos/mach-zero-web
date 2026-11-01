@@ -12,7 +12,14 @@ import {
   usePortalMutation,
   useSecretLink,
 } from '@eventkit/sdk/react';
-import { ClockIcon, LinkIcon, WifiOffIcon } from 'lucide-react';
+import {
+  CalendarCheckIcon,
+  CircleCheckIcon,
+  ClockIcon,
+  HourglassIcon,
+  LinkIcon,
+  WifiOffIcon,
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { ConfirmButton } from '@/components/ConfirmButton';
@@ -21,6 +28,7 @@ import { ErrorPage } from '@/components/ErrorPage';
 import { PaymentInstructions } from '@/components/PaymentInstructions';
 import { ListSkeleton, MeSkeleton } from '@/components/Skeletons';
 import { StatusBadge } from '@/components/StatusBadge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,15 +81,98 @@ export function Me() {
   const data = me.data;
   return (
     <>
+      <StagesNotice me={data} />
+      <RsvpCard me={data} />
       {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
       <Registration me={data} />
     </>
   );
 }
 
-function Registration({ me }: { me: Me }) {
+/**
+ * Before anything is decided: results come out in stages, so participants know
+ * to come back rather than wait for a message.
+ */
+function StagesNotice({ me }: { me: Me }) {
+  if (me.status !== 'registered' && me.status !== 'shortlisted') return null;
+  return (
+    <Alert role="status">
+      <HourglassIcon />
+      <AlertTitle>
+        {me.status === 'shortlisted' ? 'Your team is shortlisted.' : 'Your registration is in.'}
+      </AlertTitle>
+      <AlertDescription>
+        Shortlists and confirmations are released in stages — keep checking this portal for updates.
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+/** RSVP, first thing on the page: confirmed people say whether they're coming. */
+function RsvpCard({ me }: { me: Me }) {
   const rsvp = usePortalMutation((portal) => portal.me.rsvp());
   const unrsvp = usePortalMutation((portal) => portal.me.unrsvp());
+  if (!me.rsvpEnabled || (me.status !== 'confirmed' && me.status !== 'attending')) return null;
+  const attending = me.status === 'attending';
+  return (
+    <Card className={attending ? 'border-success/40' : 'border-primary'}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          {attending ? (
+            <>
+              <CircleCheckIcon className="size-5 text-success" aria-hidden /> You&apos;re attending
+            </>
+          ) : (
+            <>
+              <CalendarCheckIcon className="size-5" aria-hidden /> Your place is confirmed: will you
+              attend?
+            </>
+          )}
+        </CardTitle>
+        <CardDescription>
+          {attending
+            ? 'Thanks for confirming. Show your QR code at the entry.'
+            : 'Let the organisers know you are coming. You need to RSVP to get in.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        {attending ? (
+          <ConfirmButton
+            variant="outline"
+            className="w-full sm:w-fit"
+            title="Withdraw your RSVP?"
+            description="The organisers will count you as not coming. You can RSVP again later while your place is confirmed."
+            confirm="I can't attend"
+            cancel="Keep my RSVP"
+            disabled={unrsvp.isPending}
+            onConfirm={() => unrsvp.mutate(undefined)}
+          >
+            I can&apos;t attend after all
+          </ConfirmButton>
+        ) : (
+          <Button
+            size="lg"
+            className="w-full sm:w-fit"
+            onClick={() => rsvp.mutate(undefined)}
+            disabled={rsvp.isPending}
+          >
+            I will attend
+          </Button>
+        )}
+        <ErrorText
+          error={rsvp.error ?? unrsvp.error}
+          message={
+            hasCode(rsvp.error ?? unrsvp.error, 'RSVP_DISABLED')
+              ? 'RSVPs are off for this event. You can just turn up.'
+              : undefined
+          }
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function Registration({ me }: { me: Me }) {
   const showQr =
     me.status === 'confirmed' || me.status === 'attending' || me.status === 'checked_in';
   return (
@@ -113,34 +204,6 @@ function Registration({ me }: { me: Me }) {
               : 'Your QR code appears here once your team is confirmed.'}
           </p>
         )}
-        {me.rsvpEnabled && me.status === 'confirmed' && (
-          <Button
-            size="lg"
-            className="w-full sm:w-fit"
-            onClick={() => rsvp.mutate(undefined)}
-            disabled={rsvp.isPending}
-          >
-            I will attend
-          </Button>
-        )}
-        {me.rsvpEnabled && me.status === 'attending' && (
-          <Button
-            variant="outline"
-            className="w-full sm:w-fit"
-            onClick={() => unrsvp.mutate(undefined)}
-            disabled={unrsvp.isPending}
-          >
-            I can't attend after all
-          </Button>
-        )}
-        <ErrorText
-          error={rsvp.error ?? unrsvp.error}
-          message={
-            hasCode(rsvp.error ?? unrsvp.error, 'RSVP_DISABLED')
-              ? 'RSVPs are off for this event. You can just turn up.'
-              : undefined
-          }
-        />
       </CardContent>
     </Card>
   );

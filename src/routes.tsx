@@ -3,7 +3,7 @@ import { Layout } from '@/components/Layout';
 import { basePath, type Paths, routePath, STAFF_LOGIN } from '@/lib/paths';
 import { Home } from '@/pages/Home';
 import { Leaderboard } from '@/pages/Leaderboard';
-import { LazyJudge, LazyScan } from '@/pages/lazy';
+import { LazyJudge, LazyOutside, LazyScan } from '@/pages/lazy';
 import { Login } from '@/pages/Login';
 import { Me } from '@/pages/Me';
 import { NotFound } from '@/pages/NotFound';
@@ -50,6 +50,10 @@ export function portalRoutes(paths: Paths) {
         {
           path: '/scan',
           element: <LazyScan />,
+        },
+        {
+          path: '/outside',
+          element: <LazyOutside />,
         },
         {
           path: '/judge',

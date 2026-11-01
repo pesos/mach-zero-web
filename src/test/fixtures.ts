@@ -57,6 +57,7 @@ export function team(overrides: Partial<Schemas['Team']> = {}): Schemas['Team'] 
     createdAt: T0,
     status: 'registered',
     belowMinimum: false,
+    release: null,
     answers: {},
     members: [
       teamMember('r1', 'Asha', { isLeader: true }),
@@ -171,7 +172,12 @@ export function asParticipant(
 /** Staff (or the owner, as admin) signed in on the portal: returns their session token. */
 export function asStaff(role: 'admin' | 'volunteer' | 'judge'): string {
   server.use(
-    http.get(E, () => HttpResponse.json({ event: { ...portalInfo().event, id: EVENT_ID }, role })),
+    http.get(E, () =>
+      HttpResponse.json({
+        event: { ...portalInfo().event, id: EVENT_ID, exitReasons: ['Bathroom', 'Emergency'] },
+        role,
+      }),
+    ),
     http.get(`${E}/rounds`, () => HttpResponse.json([round()])),
   );
   return token(role === 'admin' ? 'client' : 'staff', `user-${role}`);

@@ -9,6 +9,10 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 };
+// Radix Select, Dialog and Tooltip need these too.
+Element.prototype.scrollIntoView ??= () => {};
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.releasePointerCapture ??= () => {};
 
 // Pages load in a chain (portal info → session → page data), so allow a little longer.
 configure({ asyncUtilTimeout: 3000 });

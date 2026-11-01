@@ -1,6 +1,7 @@
 import { useEventKit, usePortalInfo } from '@eventkit/sdk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  DoorOpenIcon,
   BellIcon,
   FileTextIcon,
   GavelIcon,
@@ -45,7 +46,12 @@ export function Layout() {
   const sections: Section[] = [];
   if (who.kind === 'participant')
     sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
-  if (who.canScan) sections.push({ to: '/scan', label: 'Scan', icon: ScanLineIcon });
+  if (who.canScan) {
+    sections.push(
+      { to: '/scan', label: 'Scan', icon: ScanLineIcon },
+      { to: '/outside', label: 'Outside now', icon: DoorOpenIcon },
+    );
+  }
   if (who.canJudge) sections.push({ to: '/judge', label: 'Judge', icon: GavelIcon });
   if ((who.kind === 'participant' && activities) || who.canJudge)
     sections.push({ to: '/submissions', label: 'Submissions', icon: FileTextIcon });

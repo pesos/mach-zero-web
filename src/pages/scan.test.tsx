@@ -38,6 +38,7 @@ const gate: Schemas['Checkpoint'] = {
   closesAt: null,
   allowRepeat: false,
   poll: null,
+  linkedCheckpointId: null,
   createdAt: '2026-10-20T10:00:00.000Z',
 };
 const lunch: Schemas['Checkpoint'] = { ...gate, id: 'cp-lunch', name: 'Lunch', type: 'meal' };
@@ -58,6 +59,9 @@ function scanResult(overrides: Partial<Schemas['ScanResult']> = {}): Schemas['Sc
       teamName: 'Byte Club',
       status: 'checked_in',
     },
+    reentry: false,
+    exitReason: null,
+    offline: false,
     ...overrides,
   };
 }
@@ -207,7 +211,8 @@ describe('the scanner', () => {
     act(() => {
       window.dispatchEvent(new Event('offline'));
     });
-    expect(await screen.findByRole('alert')).toHaveTextContent('No connection.');
+    expect(await screen.findByRole('alert')).toHaveTextContent("You're offline");
+    expect(screen.getByRole('alert')).toHaveTextContent('Scanning is paused');
     expect(check).toBeDisabled();
     // Back online (TanStack Query's online state is global: later tests need it).
     act(() => {

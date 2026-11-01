@@ -7,6 +7,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { ErrorPage } from '@/components/ErrorPage';
 import { CardSkeleton } from '@/components/Skeletons';
 import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { errorText } from '@/lib/eventkit';
 import { portalRoutes } from '@/routes';
 
@@ -16,7 +17,9 @@ export function Providers({ ek, children }: { ek: EventKit; children: ReactNode 
   );
   return (
     <QueryClientProvider client={queryClient}>
-      <EventKitProvider client={ek}>{children}</EventKitProvider>
+      <EventKitProvider client={ek}>
+        <TooltipProvider>{children}</TooltipProvider>
+      </EventKitProvider>
     </QueryClientProvider>
   );
 }
