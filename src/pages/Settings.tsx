@@ -1,6 +1,6 @@
 import { formatIST, type Schemas } from '@eventkit/sdk';
-import { useEventKit, useMe, useMyTeam, usePortalMutation } from '@eventkit/sdk/react';
-import { BellRingIcon, InfoIcon, KeyRoundIcon, UserRoundXIcon, UsersRoundIcon } from 'lucide-react';
+import { useMe, useMyTeam, usePortalMutation } from '@eventkit/sdk/react';
+import { InfoIcon, KeyRoundIcon, UserRoundXIcon, UsersRoundIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmButton } from '@/components/ConfirmButton';
 import { ErrorText } from '@/components/ErrorText';
@@ -104,9 +104,7 @@ function HandOver() {
 
 /** When the link was last used, how long it lasts, and replacing it if it leaked. */
 function LinkSafety({ me }: { me: Schemas['Me'] }) {
-  const ek = useEventKit();
   const reset = usePortalMutation((portal) => portal.me.resetLink());
-  const push = usePortalMutation(() => ek.portal.me.push.enable());
   return (
     <Card>
       <CardHeader>
@@ -131,17 +129,11 @@ function LinkSafety({ me }: { me: Schemas['Me'] }) {
           >
             My link leaked: give me a new one
           </ConfirmButton>
-          {me.confirmed && ek.portal.me.push.isSupported() && (
-            <Button variant="outline" onClick={() => push.mutate(undefined)}>
-              <BellRingIcon />
-              {push.isSuccess ? 'Urgent alerts on' : 'Get urgent alerts on this device'}
-            </Button>
-          )}
         </div>
         {reset.data && (
           <NewLink title="Your new link. Save it: the old one no longer works." link={reset.data} />
         )}
-        <ErrorText error={reset.error ?? push.error} />
+        <ErrorText error={reset.error} />
       </CardContent>
     </Card>
   );

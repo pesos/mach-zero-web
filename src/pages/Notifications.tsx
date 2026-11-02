@@ -1,22 +1,11 @@
 import { formatIST, type Schemas } from '@eventkit/sdk';
 import {
-  useEventKit,
   useEventMutation,
   useEventQuery,
   useMyNotifications,
   useNotifications,
-  usePortalMutation,
 } from '@eventkit/sdk/react';
-import {
-  BellOffIcon,
-  BellPlusIcon,
-  BellRingIcon,
-  CheckIcon,
-  ClockIcon,
-  HashIcon,
-  InfoIcon,
-  SendIcon,
-} from 'lucide-react';
+import { BellOffIcon, ClockIcon, HashIcon, InfoIcon, SendIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
 import { FeedTabs, groupCounts } from '@/components/FeedTabs';
@@ -55,107 +44,17 @@ export function Notifications() {
   );
 }
 
-const DISMISSED = 'notifications.pushBanner.dismissed';
-
-/** Offers push alerts for urgent notifications until enabled or dismissed (remembered on this device). */
-function PushBanner({
-  on,
-  pending,
-  error,
-  onEnable,
-}: {
-  on: boolean;
-  pending: boolean;
-  error: unknown;
-  onEnable: () => void;
-}) {
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return localStorage.getItem(DISMISSED) === '1';
-    } catch {
-      return false;
-    }
-  });
-  if (dismissed) return null;
-  const dismiss = () => {
-    setDismissed(true);
-    try {
-      localStorage.setItem(DISMISSED, '1');
-    } catch {
-      // Private mode: it comes back next visit.
-    }
-  };
-  return (
-    <Card className="py-4" aria-label="Urgent alerts" role="region">
-      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-primary/30 bg-secondary text-primary">
-          <BellPlusIcon className="size-6" aria-hidden />
-        </span>
-        <div className="grid min-w-0 flex-1 gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-base font-semibold">Get urgent alerts on this device</p>
-            <Badge
-              variant="outline"
-              className="rounded-md border-primary/40 bg-primary/10 font-mono tracking-wider text-primary uppercase"
-            >
-              Recommended
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            A push alert as soon as the organisers send something urgent, even with the portal
-            closed.
-          </p>
-          <ErrorText error={error} />
-        </div>
-        <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
-          <Button variant="ghost" onClick={dismiss}>
-            {on ? 'Close' : 'Dismiss'}
-          </Button>
-          <Button onClick={onEnable} disabled={on || pending}>
-            {on ? <CheckIcon /> : <BellRingIcon />}
-            {on ? 'Alerts on' : 'Enable alerts'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ParticipantFeed() {
   const feed = useMyNotifications();
-  const push = usePortalMutation((portal) => portal.me.push.enable());
-  const ek = useEventKit();
-  return (
-    <>
-      {ek.portal.me.push.isSupported() && (
-        <PushBanner
-          on={push.isSuccess}
-          pending={push.isPending}
-          error={push.error}
-          onEnable={() => push.mutate(undefined)}
-        />
-      )}
-      <Feed items={feed.data} error={feed.error} />
-    </>
-  );
+  return <Feed items={feed.data} error={feed.error} />;
 }
 
 function StaffFeed() {
-  const ek = useEventKit();
   const feed = useNotifications();
   const channels = useEventQuery('channels', (e) => e.channels.list());
-  const push = useEventMutation(() => ek.push.enable());
   const sendable = (channels.data ?? []).filter((c) => c.canSend);
   return (
     <>
-      {ek.push.isSupported() && (
-        <PushBanner
-          on={push.isSuccess}
-          pending={push.isPending}
-          error={push.error}
-          onEnable={() => push.mutate(undefined)}
-        />
-      )}
       {sendable.length > 0 && <SendForm channels={sendable} />}
       <Feed items={feed.data} error={feed.error ?? channels.error} />
     </>
