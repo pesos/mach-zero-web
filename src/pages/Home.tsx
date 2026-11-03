@@ -6,6 +6,7 @@ import {
   ClockIcon,
   type LucideIcon,
   MapPinIcon,
+  TrophyIcon,
   UsersIcon,
 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ import {
   goodToKnow,
   highlights,
   paymentDeadline,
+  prizes,
   registerUrl,
   schedule,
   type Slot,
@@ -98,6 +100,37 @@ export function Home() {
         </Fact>
       </ul>
 
+      <section
+        aria-label="Prizes"
+        className="flex w-full flex-col gap-5 rounded-2xl border border-primary/40 bg-gradient-to-br from-card/90 via-card/90 to-primary/25 p-5 backdrop-blur-md sm:p-6 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div className="flex items-center gap-4 sm:gap-5">
+          <span className="grid size-14 shrink-0 place-items-center rounded-xl border border-primary/70 bg-primary/10 text-primary sm:size-16">
+            <TrophyIcon aria-hidden className="size-7 sm:size-8" />
+          </span>
+          <div className="grid gap-1">
+            <p className="font-display text-xs tracking-[0.2em] text-foreground/70 uppercase">
+              {prizes.label}
+            </p>
+            <p className="bg-gradient-to-b from-white to-primary bg-clip-text font-display text-4xl leading-tight text-transparent sm:text-5xl">
+              {prizes.cash}
+            </p>
+          </div>
+        </div>
+        <ul className="grid grid-cols-2 gap-3 lg:flex">
+          {prizes.extras.map((x) => (
+            <li
+              key={x.value}
+              className="grid content-center justify-items-center gap-1 rounded-xl border bg-background/40 px-4 py-3 text-center"
+            >
+              <span className="font-display text-[0.65rem] tracking-[0.15em] text-foreground/60 uppercase">
+                {x.label}
+              </span>
+              <span className="text-base font-semibold text-balance">{x.value}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
       <Card>
         <CardHeader>
           <CardTitle className={sectionTitle}>Sponsors & partners</CardTitle>

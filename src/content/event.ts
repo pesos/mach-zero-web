@@ -3,6 +3,16 @@
 
 export const tagline = 'A 2 day contribution spree.';
 
+/** The prize headline shown above the sponsors: cash, plus the extras that go with it. */
+export const prizes = {
+  cash: '₹25,000',
+  label: 'Total prize pool',
+  extras: [
+    { label: 'Also win', value: 'Electronic kits' },
+    { label: 'Career', value: 'Internship opportunities' },
+  ],
+};
+
 /**
  * Where teams register: the event's registration link (console → Links), from
  * VITE_REGISTER_URL. Unset: the Register buttons are hidden.
@@ -53,7 +63,10 @@ export type Sponsor = { name: string; logo: string; framed?: boolean };
 export const sponsors: { title: string; items: Sponsor[] }[] = [
   {
     title: 'Sponsors',
-    items: [{ name: 'CraftifAI', logo: '/sponsors/craftifai.webp', framed: true }],
+    items: [
+      { name: 'CraftifAI', logo: '/sponsors/craftifai.webp', framed: true },
+      { name: 'DCB Bank', logo: '/sponsors/dcb-bank.png' },
+    ],
   },
   {
     title: 'Partners',
