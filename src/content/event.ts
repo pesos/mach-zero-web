@@ -5,10 +5,10 @@ export const tagline = 'A 2 day contribution spree.';
 
 /** The prize headline shown above the sponsors: cash, plus the extras that go with it. */
 export const prizes = {
-  cash: '₹25,000',
+  cash: '₹75,000+',
   label: 'Total prize pool',
   extras: [
-    { label: 'Also win', value: 'Electronic kits' },
+    { label: 'Also win', value: 'Electronic kits worth ₹20k +' },
     { label: 'Career', value: 'Internship opportunities' },
   ],
 };
