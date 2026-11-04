@@ -8,7 +8,7 @@ export const prizes = {
   cash: '₹75,000+',
   label: 'Total prize pool',
   extras: [
-    { label: 'Also win', value: 'Electronic kits worth ₹20k +' },
+    { label: 'Also win', value: 'Electronic kits worth ₹20k+' },
     { label: 'Career', value: 'Internship opportunities' },
   ],
 };
