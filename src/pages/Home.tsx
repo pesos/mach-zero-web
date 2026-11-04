@@ -246,20 +246,6 @@ export function Home() {
           ))}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className={sectionTitle}>Instructions</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm">
-          {goodToKnow.map((g) => (
-            <div key={g.title} className="rounded-lg bg-muted/60 p-4">
-              <p className="font-medium">{g.title}</p>
-              <p className="mt-1 leading-relaxed text-muted-foreground">{g.body}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </>
   );
 }
