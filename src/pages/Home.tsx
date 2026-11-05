@@ -38,7 +38,7 @@ export function Home() {
   const { event, registrationOpen, paths } = usePortalInfo().data!;
   const who = useWho();
   const days = istDays(event.startAt, event.endAt);
-  const fee = describeFee(event) && displayedFee;
+  const fee = describeFee({ ...event, registrationFee: event.registrationFee && displayedFee });
   return (
     <>
       <section className="grid justify-items-center gap-5 py-4 text-center sm:py-8">

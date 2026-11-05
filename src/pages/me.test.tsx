@@ -174,7 +174,7 @@ describe('the team leader’s page', () => {
     expect(
       screen.getByText(/asha@example.com · \+91 98450 00000 · link never opened/),
     ).toBeInTheDocument();
-    expect(screen.getByText('₹400 for the team.')).toBeInTheDocument();
+    expect(screen.getByText('₹250 for the team.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'New link' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Make a new link for Ravi?' });
     expect(dialog).toHaveTextContent(
@@ -221,7 +221,7 @@ describe('the team leader’s page', () => {
     );
     renderPortal('/me', { session });
     expect(await screen.findByText(/rejected \(Blurry\)/)).toBeInTheDocument();
-    expect(screen.getByText(/₹400 for the team, by/)).toBeInTheDocument();
+    expect(screen.getByText(/₹250 for the team, by/)).toBeInTheDocument();
     await userEvent.upload(screen.getByLabelText('Upload a new receipt'), png());
     expect(await screen.findByText(/: pending/)).toBeInTheDocument();
     // A receipt under review can't be replaced.

@@ -25,6 +25,7 @@ import { ErrorText } from '@/components/ErrorText';
 import { FieldInputs } from '@/components/FieldInputs';
 import { FormSkeleton } from '@/components/Skeletons';
 import { PaymentInstructions } from '@/components/PaymentInstructions';
+import { displayedFee } from '@/content/event';
 import { UpdatesGroup } from '@/components/UpdatesGroup';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -227,7 +228,11 @@ function TeamForm(props: {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Pay {formatMoney(amountDue(event, members.length), event.currency)}
+              Pay{' '}
+              {formatMoney(
+                amountDue({ ...event, registrationFee: displayedFee }, members.length),
+                event.currency,
+              )}
               {event.feeBasis === 'per_team' ? ' for the team' : ''}
             </CardTitle>
             <CardDescription>
