@@ -95,8 +95,6 @@ export function Home() {
         <Fact icon={UsersIcon} label="Teams">
           Teams of {event.minTeamSize}–{event.maxTeamSize}
           {fee && ` · ${fee}`}
-          {' · '}
-          {event.placesLeft} places left
         </Fact>
       </ul>
 

@@ -13,7 +13,7 @@ describe('the event home page', () => {
     vi.stubEnv('VITE_REGISTER_URL', 'https://portal.test/register/reg-token');
     renderPortal('/');
     expect(await screen.findByRole('heading', { name: 'PESOS X Silicon' })).toBeInTheDocument();
-    expect(screen.getByText(/Teams of 2–3 · ₹250 per person · 42 places left/)).toBeInTheDocument();
+    expect(screen.getByText(/Teams of 2–3 · ₹250 per person/)).toBeInTheDocument();
     expect(screen.getByText(/Registration is open until/)).toBeInTheDocument();
     expect(screen.queryByText(/Registered already/)).not.toBeInTheDocument();
     expect(screen.getByText('Registrations open')).toBeInTheDocument();
