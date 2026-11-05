@@ -54,7 +54,6 @@ describe('the event home page', () => {
     expect(within(day2).getByText('Final presentations')).toBeInTheDocument();
     expect(screen.getByText('Day 1: 8:00 AM – 7:00 PM')).toBeInTheDocument();
     expect(screen.getByText('Day 2: 7:00 AM – 7:00 PM')).toBeInTheDocument();
-    expect(screen.getByText(/At least two CSE or AIML students per team/)).toBeInTheDocument();
     const sponsors = screen.getByRole('region', { name: 'Sponsors' });
     expect(within(sponsors).getByRole('img', { name: 'CraftifAI' })).toBeInTheDocument();
     const partners = screen.getByRole('region', { name: 'Partners' });

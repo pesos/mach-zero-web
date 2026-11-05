@@ -50,13 +50,6 @@ export const highlights: { value: string; label: string }[] = [
   { value: 'Silicon × PESOS', label: 'event collaboration' },
 ];
 
-export const goodToKnow: { title: string; body: string }[] = [
-  {
-    title: 'Team composition',
-    body: 'At least two CSE or AIML students per team. Students from ECE and other branches are encouraged to join.',
-  },
-];
-
 /**
  * Logos sit straight on the portal's dark background. `framed`: the logo has
  * its own light background, so it gets a rounded light frame to match.
