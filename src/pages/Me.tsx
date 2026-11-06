@@ -36,7 +36,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { displayedFee } from '@/content/event';
 import { hasCode } from '@/lib/eventkit';
 import { cn } from '@/lib/utils';
 
@@ -347,7 +346,7 @@ function LeaderTeam() {
               <h3 className="font-semibold">Payment</h3>
               {t.payment.amountDue !== null && (
                 <p>
-                  {formatMoney(displayedFee, t.payment.currency)} for the team
+                  {formatMoney(t.payment.amountDue, t.payment.currency)} for the team
                   {t.payment.deadline && `, by ${formatIST(t.payment.deadline)}`}.
                 </p>
               )}

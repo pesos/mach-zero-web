@@ -3,9 +3,6 @@
 
 export const tagline = 'A 2 day contribution spree.';
 
-/** The fee shown on the page, in paise; the event record (and what's charged) says otherwise, on purpose. */
-export const displayedFee = 25000;
-
 /** The prize headline shown above the sponsors: cash, plus the extras that go with it. */
 export const prizes = {
   cash: '₹1,00,000+',

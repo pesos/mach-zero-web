@@ -111,7 +111,7 @@ describe('registering a team', () => {
     );
     renderPortal('/register/reg-token');
     expect(
-      await screen.findByRole('heading', { name: 'Pay ₹250 for the team' }),
+      await screen.findByRole('heading', { name: 'Pay ₹1,200 for the team' }),
     ).toBeInTheDocument();
     const how = screen.getByLabelText('How to pay');
     expect(within(how).getByText(/or UPI: club@upi/)).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe('registering a team', () => {
     ).toHaveAttribute('href', 'https://bucket.test/events/e/payment-instructions/i.pdf?sig=1');
     expect(within(how).queryByRole('img')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Add a member' }));
-    expect(screen.getByRole('heading', { name: 'Pay ₹250 for the team' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pay ₹1,200 for the team' })).toBeInTheDocument();
     expect(screen.getByLabelText('Payment receipt')).toBeInTheDocument();
   });
 
@@ -200,10 +200,10 @@ describe('registering a team', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add a member' }));
     expect(screen.getByRole('heading', { name: 'Member 3' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add a member' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Pay ₹750' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pay ₹600' })).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Remove' })[1]!);
     expect(screen.queryByRole('heading', { name: 'Member 3' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Pay ₹500' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pay ₹400' })).toBeInTheDocument();
 
     expect(submit).toBeDisabled();
     await userEvent.upload(screen.getByLabelText('Payment receipt'), png());
