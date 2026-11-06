@@ -121,22 +121,12 @@ describe('a member’s page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('RSVPs are off for this event');
   });
 
-  it('shows what organisers assigned the team once released', async () => {
+  it('sums up released assignments, linking to the Assignments tab', async () => {
     const session = asParticipant(
       { status: 'confirmed' },
       {
         team: team({
           assignments: [
-            {
-              listId: 'l1',
-              listName: 'Problem statement',
-              kind: 'options',
-              option: { id: 'o1', title: 'Smart canteen', description: 'Shorter lunch queues' },
-              text: null,
-              released: true,
-              assignedBy: null,
-              assignedAt: '2026-10-20T10:00:00.000Z',
-            },
             {
               listId: 'l2',
               listName: 'Table',
@@ -152,17 +142,19 @@ describe('a member’s page', () => {
       },
     );
     renderPortal('/me', { session });
-    expect(await screen.findByText('Assigned to your team')).toBeInTheDocument();
-    expect(screen.getByText('Smart canteen')).toBeInTheDocument();
-    expect(screen.getByText('Shorter lunch queues')).toBeInTheDocument();
+    expect(await screen.findByText("Your team's assignments")).toBeInTheDocument();
     expect(screen.getByText('Hall B, table 12')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See details' })).toHaveAttribute(
+      'href',
+      '/assignments',
+    );
   });
 
-  it('shows no assignments card before anything is released', async () => {
+  it('has no assignments card before anything is released', async () => {
     const session = asParticipant({ status: 'confirmed' });
     renderPortal('/me', { session });
     await screen.findByTitle('Your check-in QR code');
-    expect(screen.queryByText('Assigned to your team')).not.toBeInTheDocument();
+    expect(screen.queryByText("Your team's assignments")).not.toBeInTheDocument();
   });
 
   it('shows an RSVP refusal', async () => {

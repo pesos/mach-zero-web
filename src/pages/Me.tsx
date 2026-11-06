@@ -32,6 +32,7 @@ import { UpdatesGroup } from '@/components/UpdatesGroup';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -87,7 +88,7 @@ export function Me() {
       {data.status !== 'cancelled' && <UpdatesGroup />}
       {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
       <Registration me={data} />
-      <Assignments />
+      <AssignmentSummary />
     </>
   );
 }
@@ -212,30 +213,28 @@ function Registration({ me }: { me: Me }) {
   );
 }
 
-/** What organisers gave the team (problem statement, table, mentor…), once they release it. */
-function Assignments() {
+/** One line per released assignment (table, mentor, problem statement…); details are on their own tab. */
+function AssignmentSummary() {
   const team = useMyTeam();
   const list = team.data?.assignments ?? [];
   if (list.length === 0) return null;
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Assigned to your team</CardTitle>
+        <CardTitle className="text-base">Your team&apos;s assignments</CardTitle>
       </CardHeader>
-      <CardContent>
-        <dl className="grid divide-y">
+      <CardContent className="grid gap-3">
+        <dl className="grid gap-1.5 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
           {list.map((a) => (
-            <div key={a.listId} className="grid gap-0.5 py-2 text-sm">
+            <div key={a.listId} className="contents">
               <dt className="text-muted-foreground">{a.listName}</dt>
               <dd className="font-medium">{a.option?.title ?? a.text}</dd>
-              {a.option?.description && (
-                <dd className="whitespace-pre-line text-muted-foreground">
-                  {a.option.description}
-                </dd>
-              )}
             </div>
           ))}
         </dl>
+        <Button asChild variant="outline" size="sm" className="w-fit">
+          <Link to="/assignments">See details</Link>
+        </Button>
       </CardContent>
     </Card>
   );

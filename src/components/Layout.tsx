@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   DoorOpenIcon,
   BellIcon,
+  ClipboardListIcon,
   FileTextIcon,
   GavelIcon,
   KeyRoundIcon,
@@ -45,7 +46,10 @@ export function Layout() {
   const activities = who.kind !== 'participant' || (day.open && confirmed);
   const sections: Section[] = [];
   if (who.kind === 'participant')
-    sections.push({ to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon });
+    sections.push(
+      { to: basePath(info.paths.me), label: 'My registration', icon: UserRoundIcon },
+      { to: '/assignments', label: 'Assignments', icon: ClipboardListIcon },
+    );
   if (who.canScan) {
     sections.push(
       { to: '/scan', label: 'Scan', icon: ScanLineIcon },

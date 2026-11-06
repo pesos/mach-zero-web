@@ -1,4 +1,5 @@
 import { ErrorPage } from '@/components/ErrorPage';
+import { Assignments } from '@/pages/Assignments';
 import { Layout } from '@/components/Layout';
 import { basePath, type Paths, routePath, STAFF_LOGIN } from '@/lib/paths';
 import { Home } from '@/pages/Home';
@@ -41,6 +42,7 @@ export function portalRoutes(paths: Paths) {
         { path: routePath(paths.me), element: <Me /> },
         ...(meBase === '/' ? [] : [{ path: meBase, element: <Me /> }]),
         { path: paths.notifications, element: <Notifications /> },
+        { path: '/assignments', element: <Assignments /> },
         { path: '/settings', element: <Settings /> },
         { path: '/polls', element: <Polls /> },
         { path: '/leaderboard', element: <Leaderboard /> },
