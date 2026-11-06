@@ -284,12 +284,17 @@ function Initial({ name }: { name: string }) {
 /** The leader's view: contacts, link activity and payment. Organisers make new links. */
 function LeaderTeam() {
   const team = useMyTeam();
+  const { event, registrationOpen } = usePortalInfo().data!;
   const pay = usePortalMutation((portal, file: File) => portal.me.team.payReceipt(file));
+  const remove = usePortalMutation((portal, id: string) => portal.me.team.removeMember(id));
   if (team.isPending) return <ListSkeleton label="Loading your team" />;
   if (team.isError) return <ErrorText error={team.error} />;
   const t = team.data;
   const status = teamDisplayStatus(t);
   const latest = t.payment.proofs[0]?.status;
+  // Until registration closes, the leader can remove a teammate, never below the minimum.
+  const active = t.members.filter((m) => m.status !== 'cancelled').length;
+  const canRemove = registrationOpen && t.status !== 'cancelled' && active > event.minTeamSize;
   const paid = t.payment.proofs.some((p) => p.status === 'approved');
   // After paying: another receipt for members added since (per-person fee).
   const topUp = paid && t.payment.unpaid.length > 0 && t.status !== 'cancelled';
@@ -334,9 +339,26 @@ function LeaderTeam() {
                     .join(' · ')}
                 </p>
               </div>
+              {canRemove &&
+                !m.isLeader &&
+                m.status !== 'cancelled' &&
+                m.status !== 'checked_in' && (
+                  <ConfirmButton
+                    size="sm"
+                    variant="outline"
+                    title={`Remove ${m.name} from the team?`}
+                    description="Their registration is cancelled and their link stops working. Payments aren't refunded automatically; an organiser can bring them back."
+                    confirm="Remove"
+                    disabled={remove.isPending}
+                    onConfirm={() => remove.mutate(m.registrationId)}
+                  >
+                    Remove
+                  </ConfirmButton>
+                )}
             </li>
           ))}
         </ul>
+        <ErrorText error={remove.error} />
         <p className="text-xs text-muted-foreground">
           A teammate lost their link, or it leaked? Ask the organisers: they send you a new one to
           pass on.

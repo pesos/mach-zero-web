@@ -1,8 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
-import { asParticipant, me, png, proof, team, uploadTicket } from '@/test/fixtures';
+import { asParticipant, me, png, proof, team, teamMember, uploadTicket } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, P, portalEvent, portalInfo, server, token } from '@/test/server';
 
@@ -246,6 +246,39 @@ describe('the team leader’s page', () => {
   it('keeps the add-a-member page for the team leader', async () => {
     renderPortal('/team/add', { session: asParticipant() });
     expect(await screen.findByText('Only your team leader can add a member.')).toBeInTheDocument();
+  });
+
+  it('removes a teammate after confirming, until registration closes', async () => {
+    let removed = '';
+    const session = asParticipant(leader, {
+      team: team({
+        members: [
+          teamMember('r1', 'Asha', { isLeader: true }),
+          teamMember('r2', 'Ravi'),
+          teamMember('r3', 'Dev'),
+        ],
+      }),
+    });
+    server.use(
+      http.post(`${P}/me/team/members/:registrationId/remove`, ({ params }) => {
+        removed = String(params.registrationId);
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+    renderPortal('/me', { session });
+    const buttons = await screen.findAllByRole('button', { name: 'Remove' });
+    expect(buttons).toHaveLength(2);
+    await userEvent.click(buttons[1]!);
+    const dialog = await screen.findByRole('alertdialog', { name: 'Remove Dev from the team?' });
+    expect(dialog).toHaveTextContent("Payments aren't refunded automatically");
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
+    await waitFor(() => expect(removed).toBe('r3'));
+  });
+
+  it('offers no Remove when the team is at its minimum size', async () => {
+    renderPortal('/me', { session: asParticipant(leader) });
+    expect(await screen.findByText('You lead this team.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument();
   });
 
   it('asks for another receipt for members added after paying', async () => {
