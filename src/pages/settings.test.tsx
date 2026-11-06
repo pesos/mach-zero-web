@@ -82,7 +82,14 @@ describe('settings', () => {
       { isLeader: true },
       {
         team: team({
-          payment: { mode: 'none', amountDue: null, currency: null, deadline: null, proofs: [] },
+          payment: {
+            mode: 'none',
+            amountDue: null,
+            paidAmount: null,
+            currency: null,
+            deadline: null,
+            proofs: [],
+          },
           members: [
             teamMember('r1', 'Asha', { isLeader: true }),
             teamMember('r2', 'Ravi'),

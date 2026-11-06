@@ -66,12 +66,14 @@ export function team(overrides: Partial<Schemas['Team']> = {}): Schemas['Team'] 
     payment: {
       mode: 'at_registration',
       amountDue: 40000,
+      paidAmount: null,
       currency: 'INR',
       deadline: null,
       proofs: [],
     },
     shortlistedBy: null,
     confirmedBy: null,
+    assignments: [],
     ...overrides,
   };
 }
@@ -86,6 +88,7 @@ export const proof = (
   amount: 40000,
   currency: 'INR',
   memberCount: 2,
+  paidAmount: status === 'approved' ? 40000 : null,
   uploadedAt: T0,
   verifiedAt: null,
   rejectionNote,

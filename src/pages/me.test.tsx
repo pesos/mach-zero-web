@@ -121,6 +121,50 @@ describe('a member’s page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('RSVPs are off for this event');
   });
 
+  it('shows what organisers assigned the team once released', async () => {
+    const session = asParticipant(
+      { status: 'confirmed' },
+      {
+        team: team({
+          assignments: [
+            {
+              listId: 'l1',
+              listName: 'Problem statement',
+              kind: 'options',
+              option: { id: 'o1', title: 'Smart canteen', description: 'Shorter lunch queues' },
+              text: null,
+              released: true,
+              assignedBy: null,
+              assignedAt: '2026-10-20T10:00:00.000Z',
+            },
+            {
+              listId: 'l2',
+              listName: 'Table',
+              kind: 'text',
+              option: null,
+              text: 'Hall B, table 12',
+              released: true,
+              assignedBy: null,
+              assignedAt: '2026-10-20T10:00:00.000Z',
+            },
+          ],
+        }),
+      },
+    );
+    renderPortal('/me', { session });
+    expect(await screen.findByText('Assigned to your team')).toBeInTheDocument();
+    expect(screen.getByText('Smart canteen')).toBeInTheDocument();
+    expect(screen.getByText('Shorter lunch queues')).toBeInTheDocument();
+    expect(screen.getByText('Hall B, table 12')).toBeInTheDocument();
+  });
+
+  it('shows no assignments card before anything is released', async () => {
+    const session = asParticipant({ status: 'confirmed' });
+    renderPortal('/me', { session });
+    await screen.findByTitle('Your check-in QR code');
+    expect(screen.queryByText('Assigned to your team')).not.toBeInTheDocument();
+  });
+
   it('shows an RSVP refusal', async () => {
     const session = asParticipant({ status: 'confirmed' });
     server.use(http.post(`${P}/me/rsvp`, () => apiError(409, 'EVENT_FULL', 'The event is full.')));

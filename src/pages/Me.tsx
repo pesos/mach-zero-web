@@ -87,6 +87,7 @@ export function Me() {
       {data.status !== 'cancelled' && <UpdatesGroup />}
       {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
       <Registration me={data} />
+      <Assignments />
     </>
   );
 }
@@ -206,6 +207,35 @@ function Registration({ me }: { me: Me }) {
               : 'Your QR code appears here once your team is confirmed.'}
           </p>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** What organisers gave the team (problem statement, table, mentor…), once they release it. */
+function Assignments() {
+  const team = useMyTeam();
+  const list = team.data?.assignments ?? [];
+  if (list.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Assigned to your team</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid divide-y">
+          {list.map((a) => (
+            <div key={a.listId} className="grid gap-0.5 py-2 text-sm">
+              <dt className="text-muted-foreground">{a.listName}</dt>
+              <dd className="font-medium">{a.option?.title ?? a.text}</dd>
+              {a.option?.description && (
+                <dd className="whitespace-pre-line text-muted-foreground">
+                  {a.option.description}
+                </dd>
+              )}
+            </div>
+          ))}
+        </dl>
       </CardContent>
     </Card>
   );
