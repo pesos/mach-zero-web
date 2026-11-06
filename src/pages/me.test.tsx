@@ -228,14 +228,24 @@ describe('the team leader’s page', () => {
       }),
     );
     renderPortal('/me', { session });
-    expect(await screen.findByText('Add a member')).toBeInTheDocument();
+    // My registration only links to the page with the form.
+    expect(await screen.findByText('Forgot to add a team member?')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('link', { name: 'Add team member' }));
+    expect(await screen.findByText('Add a team member')).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Name'), 'Dev');
     await userEvent.type(screen.getByLabelText('Email'), 'dev@example.com');
     await userEvent.click(screen.getByRole('button', { name: 'Add member' }));
-    expect(await screen.findByText(/Dev joined your team/)).toHaveTextContent(
-      'Their link was emailed to you (asha@example.com)',
-    );
+    expect(await screen.findByText('Dev joined your team')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Their link was emailed to you \(asha@example.com\)/),
+    ).toBeInTheDocument();
     expect(sent).toEqual({ name: 'Dev', email: 'dev@example.com', answers: {} });
+  });
+
+  it('keeps the add-a-member page for the team leader', async () => {
+    renderPortal('/team/add', { session: asParticipant() });
+    expect(await screen.findByText('Only your team leader can add a member.')).toBeInTheDocument();
   });
 
   it('asks for another receipt for members added after paying', async () => {

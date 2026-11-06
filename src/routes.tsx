@@ -1,3 +1,4 @@
+import { ADD_MEMBER_PATH, AddMemberPage } from '@/components/AddMember';
 import { ErrorPage } from '@/components/ErrorPage';
 import { Assignments } from '@/pages/Assignments';
 import { Layout } from '@/components/Layout';
@@ -43,6 +44,7 @@ export function portalRoutes(paths: Paths) {
         ...(meBase === '/' ? [] : [{ path: meBase, element: <Me /> }]),
         { path: paths.notifications, element: <Notifications /> },
         { path: '/assignments', element: <Assignments /> },
+        { path: ADD_MEMBER_PATH, element: <AddMemberPage /> },
         { path: '/settings', element: <Settings /> },
         { path: '/polls', element: <Polls /> },
         { path: '/leaderboard', element: <Leaderboard /> },

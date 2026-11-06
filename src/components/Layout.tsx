@@ -17,7 +17,7 @@ import {
   VoteIcon,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router';
 import { Backdrop } from '@/components/Backdrop';
 import { NotificationBell } from '@/components/NotificationBell';
 import { Button } from '@/components/ui/button';
@@ -187,6 +187,8 @@ export function Layout() {
         <div className={cn(who.kind && 'px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8 md:px-8')}>
           <main className="mx-auto grid w-full max-w-3xl min-w-0 grid-cols-1 content-start gap-6">
             <Outlet />
+            {/* New pages open at the top; Back returns to where you were. */}
+            <ScrollRestoration />
           </main>
         </div>
       </div>

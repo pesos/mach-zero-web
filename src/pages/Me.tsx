@@ -21,7 +21,7 @@ import {
   WifiOffIcon,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { AddMember } from '@/components/AddMember';
+import { AddMemberPrompt } from '@/components/AddMember';
 import { ConfirmButton } from '@/components/ConfirmButton';
 import { ErrorText } from '@/components/ErrorText';
 import { ErrorPage } from '@/components/ErrorPage';
@@ -87,7 +87,7 @@ export function Me() {
       <RsvpCard me={data} />
       {data.status !== 'cancelled' && <UpdatesGroup />}
       {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
-      {data.isLeader && <AddMember />}
+      {data.isLeader && <AddMemberPrompt />}
       <Registration me={data} />
       <AssignmentSummary />
     </>
