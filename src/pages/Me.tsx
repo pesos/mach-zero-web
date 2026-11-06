@@ -319,7 +319,7 @@ function LeaderTeam() {
                   </span>
                   <StatusBadge status={m.status} />
                 </div>
-                <p className="text-xs break-words text-muted-foreground">
+                <p className="text-xs wrap-anywhere text-muted-foreground">
                   {[
                     m.email,
                     m.phone,

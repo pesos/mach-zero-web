@@ -185,7 +185,7 @@ export function Layout() {
           </aside>
         )}
         <div className={cn(who.kind && 'px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8 md:px-8')}>
-          <main className="mx-auto grid w-full max-w-3xl min-w-0 content-start gap-6">
+          <main className="mx-auto grid w-full max-w-3xl min-w-0 grid-cols-1 content-start gap-6">
             <Outlet />
           </main>
         </div>
