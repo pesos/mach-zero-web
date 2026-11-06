@@ -51,31 +51,12 @@ describe('settings', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Team trouble.');
   });
 
-  it('replaces a leaked link', async () => {
+  it('sends a leaked link to the organisers: participants cannot replace it', async () => {
     const session = asParticipant();
-    server.use(
-      http.post(`${P}/me/access/reset`, () =>
-        HttpResponse.json({
-          link: { token: 'ek_new', url: 'https://portal.test/me/ek_new' },
-          session: {
-            accessToken: token('participant', 'r1'),
-            tokenType: 'Bearer',
-            expiresIn: '14d',
-          },
-        }),
-      ),
-    );
     renderPortal('/settings', { session });
-    const button = await screen.findByRole('button', { name: 'My link leaked: give me a new one' });
-    await userEvent.click(button);
-    await userEvent.click(screen.getByRole('button', { name: 'Keep my link' }));
-    expect(screen.queryByText(/Your new link/)).not.toBeInTheDocument();
-    await userEvent.click(button);
-    await userEvent.click(screen.getByRole('button', { name: 'Replace link' }));
-    expect(await screen.findByText(/Your new link\. Save it/)).toBeInTheDocument();
-    expect(screen.getByText('https://portal.test/me/ek_new')).toBeInTheDocument();
+    expect(await screen.findByText(/Ask the organisers for a new one/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /give me a new one/ })).not.toBeInTheDocument();
   });
-
   it('hands the team to another member', async () => {
     let sent: unknown;
     const session = asParticipant(

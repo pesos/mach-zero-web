@@ -1,5 +1,7 @@
-// The email eventKit sends each member (separately) once a team registers, in the
-// portal's night theme. eventKit fills the {{…}} variables and escapes them;
+// The email eventKit sends the team leader (only the leader is ever mailed), in the
+// portal's night theme. On registering it lists every member's pass link for the
+// leader to send on; a replaced link or a member who joined later comes with just
+// that one link. eventKit fills the {{…}} variables and escapes them;
 // save it with `npm run email -- save` (see README). Mail apps run no scripts,
 // so every button is a link. No images, web fonts or hidden text: spam filters
 // count them against a sender, and Gmail blocks images in spam anyway.
@@ -35,8 +37,20 @@ const leaderBadge = `<span style="display:inline-block;margin-left:6px;padding:2
 
 const memberRow = t.eachMember(
   (m) =>
-    `<div style="padding:6px 0;font-size:14px;color:${c.text}">${m.name}${t.when(m.isLeader, leaderBadge)}</div>`,
+    `<div style="padding:6px 0;font-size:14px;color:${c.text}">${m.name}${t.when(m.isLeader, leaderBadge)}${t.when(
+      m.dashboardUrl,
+      `<div style="margin-top:2px;font-size:12px;line-height:1.5;word-break:break-all"><a href="${m.dashboardUrl}" style="color:${c.lavender}">${m.dashboardUrl}</a></div>`,
+    )}</div>`,
 );
+
+/** A link for the leader to pass on, as a button plus the address to copy. */
+const passOn = (heading: string, url: string) =>
+  `<p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:${c.text}">${heading}</p>
+<div style="margin:0 0 6px">${t.button({ href: url, label: 'Open their pass', background: c.lavender, color: c.ink, radius: '10px' })}</div>
+<p style="margin:0 0 14px;font-size:12px;line-height:1.5;color:${c.soft};word-break:break-all">${url}</p>`;
+
+/** Only on the email sent when the team registers (not a replaced link or a new member). */
+const onRegistering = (html: string) => t.unless(t.linkReplaced, t.unless(t.memberAdded, html));
 
 const html = `<!doctype html>
 <html lang="en">
@@ -72,7 +86,8 @@ ${card(
   `<div style="display:inline-block;padding:4px 12px;border-radius:999px;background:${c.lavender};color:${c.ink};font-size:13px;font-weight:600">&#10003; Registered</div>
 <h1 style="margin:14px 0 6px;font-family:${display};font-size:24px;font-weight:400;line-height:1.25;color:${c.text}">${t.team.name} is in</h1>
 <p style="margin:0 0 10px;font-size:15px;line-height:1.6;color:${c.text}">Hi ${t.member.name}, you're registered for ${t.event.name}.</p>
-${t.when(t.linkReplaced, `<p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:${c.soft}">This is a new link for you: the old one has stopped working.</p>`)}
+${t.when(t.linkReplaced, passOn(`<strong>New link for ${t.replaced.name}.</strong> Their old one has stopped working: send them this one.`, t.replaced.dashboardUrl))}
+${t.when(t.memberAdded, passOn(`<strong>${t.added.name} joined ${t.team.name}.</strong> Send them their pass link.`, t.added.dashboardUrl))}
 <div style="margin:14px 0 0;font-size:13px;color:${c.soft}">Your participant ID <span style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:16px;font-weight:700;color:${c.text};letter-spacing:0.5px">${t.member.participantCode}</span></div>
 ${t.when(
   t.links.dashboard,
@@ -80,7 +95,9 @@ ${t.when(
 <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:${c.soft}">This link is yours alone: anyone who has it can open your page.</p>`,
 )}${t.unless(
     t.links.dashboard,
-    `<p style="margin:12px 0 0;font-size:13px;color:${c.soft}">Ask the organisers for your dashboard link.</p>`,
+    onRegistering(
+      `<p style="margin:12px 0 0;font-size:13px;color:${c.soft}">Ask the organisers for your dashboard link.</p>`,
+    ),
   )}`,
   `border-color:${c.haze}`,
 )}
@@ -96,6 +113,12 @@ ${t.when(
 <tr><td style="padding-top:22px">
   <div style="font-family:${display};font-size:18px;color:${c.text};padding-bottom:6px">Team ${t.team.name}</div>
   ${memberRow}
+  ${onRegistering(
+    t.when(
+      t.links.dashboard,
+      `<p style="margin:10px 0 0;font-size:13px;line-height:1.6;color:${c.soft}">Send each teammate their own link: it opens their pass. Anyone with a link can open that person's page.</p>`,
+    ),
+  )}
 </td></tr>
 
 <tr><td style="padding-top:22px">
@@ -112,7 +135,7 @@ ${t.when(
 
 <tr><td align="center" style="padding-top:28px;font-size:12px;line-height:1.6;color:${c.soft}">
   ${t.event.name} · ${t.event.venue}<br>
-  You're getting this because you're on a team registered for ${t.event.name}.
+  You're getting this because you lead a team registered for ${t.event.name}.
 </td></tr>
 
 </table>
@@ -125,12 +148,12 @@ ${t.when(
 const text = `Hi ${t.member.name},
 
 You're registered for ${t.event.name}, hosted by ${t.event.hostedBy}: ${t.event.when}, ${t.event.venue}.
-${t.when(t.linkReplaced, '\nThis is a new link for you: the old one has stopped working.\n')}
+${t.when(t.linkReplaced, `\nNew link for ${t.replaced.name}: their old one has stopped working. Send them this one:\n${t.replaced.dashboardUrl}\n`)}${t.when(t.memberAdded, `\n${t.added.name} joined ${t.team.name}. Send them their pass link:\n${t.added.dashboardUrl}\n`)}
 Your participant ID: ${t.member.participantCode}
-${t.when(t.links.dashboard, `Your pass: ${t.links.dashboard}\nThis link is yours alone: anyone who has it can open your page.`)}${t.unless(t.links.dashboard, 'Your dashboard link: ask the organisers')}
+${t.when(t.links.dashboard, `Your pass: ${t.links.dashboard}\nThis link is yours alone: anyone who has it can open your page.`)}${t.unless(t.links.dashboard, onRegistering('Your dashboard link: ask the organisers'))}
 
 Team ${t.team.name}:
-${t.eachMember((m) => `- ${m.name}${t.when(m.isLeader, ' (leader)')}\n`)}
+${t.eachMember((m) => `- ${m.name}${t.when(m.isLeader, ' (leader)')}${t.when(m.dashboardUrl, `: ${m.dashboardUrl}`)}\n`)}${onRegistering(t.when(t.links.dashboard, 'Send each teammate their own link: it opens their pass.\n'))}
 Your check-in QR code appears on your dashboard once your team is confirmed.
 ${t.when(t.links.portal, `\n${t.links.portal}\n`)}
 PESOS x SILICON presents ${t.event.name}.

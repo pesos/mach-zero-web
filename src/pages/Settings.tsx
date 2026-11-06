@@ -2,9 +2,7 @@ import { formatIST, type Schemas } from '@eventkit/sdk';
 import { useMe, useMyTeam, usePortalMutation } from '@eventkit/sdk/react';
 import { InfoIcon, KeyRoundIcon, UserRoundXIcon, UsersRoundIcon } from 'lucide-react';
 import { useState } from 'react';
-import { ConfirmButton } from '@/components/ConfirmButton';
 import { ErrorText } from '@/components/ErrorText';
-import { NewLink } from '@/components/NewLink';
 import { CardSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -104,7 +102,6 @@ function HandOver() {
 
 /** When the link was last used, how long it lasts, and replacing it if it leaked. */
 function LinkSafety({ me }: { me: Schemas['Me'] }) {
-  const reset = usePortalMutation((portal) => portal.me.resetLink());
   return (
     <Card>
       <CardHeader>
@@ -117,23 +114,9 @@ function LinkSafety({ me }: { me: Schemas['Me'] }) {
           {me.linkLastUsedAt && ` Last opened ${formatIST(me.linkLastUsedAt)}.`}
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <div className="flex flex-wrap gap-2">
-          <ConfirmButton
-            variant="outline"
-            title="Replace your link?"
-            description="The old link stops working on every device. Your new one appears here."
-            confirm="Replace link"
-            cancel="Keep my link"
-            onConfirm={() => reset.mutate(undefined)}
-          >
-            My link leaked: give me a new one
-          </ConfirmButton>
-        </div>
-        {reset.data && (
-          <NewLink title="Your new link. Save it: the old one no longer works." link={reset.data} />
-        )}
-        <ErrorText error={reset.error} />
+      <CardContent className="text-sm text-muted-foreground">
+        Lost it, or think someone else has it? Ask the organisers for a new one: the old link then
+        stops working.
       </CardContent>
     </Card>
   );

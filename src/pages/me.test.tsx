@@ -193,15 +193,8 @@ describe('a member’s page', () => {
 describe('the team leader’s page', () => {
   const leader = { isLeader: true };
 
-  it('shows contacts and link activity, and emails a member a new link', async () => {
-    let asked = '';
+  it('shows contacts and link activity, and sends link requests to the organisers', async () => {
     const session = asParticipant(leader);
-    server.use(
-      http.post(`${P}/me/team/members/:registrationId/reissue-link`, ({ params }) => {
-        asked = String(params.registrationId);
-        return HttpResponse.json({ sent: true });
-      }),
-    );
     renderPortal('/me', { session });
     expect(await screen.findByText('You lead this team.')).toBeInTheDocument();
     expect(
@@ -211,31 +204,9 @@ describe('the team leader’s page', () => {
       screen.getByText(/asha@example.com · \+91 98450 00000 · link never opened/),
     ).toBeInTheDocument();
     expect(screen.getByText('₹400 for the team.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'New link' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Make a new link for Ravi?' });
-    expect(dialog).toHaveTextContent(
-      "Their old link stops working. The new link is emailed to them; you won't see it.",
-    );
-    await userEvent.click(screen.getByRole('button', { name: 'Make new link' }));
-    expect(await screen.findByText('New link emailed to Ravi')).toBeInTheDocument();
-    expect(asked).toBe('r2');
-  });
-
-  it.each([
-    ['MAILING_OFF', 'Email is off for this event; ask an organiser to send a new link'],
-    ['MAIL_FAILED', 'The email could not be sent'],
-  ])('explains a new link that fails with %s', async (code, text) => {
-    const session = asParticipant(leader);
-    server.use(
-      http.post(`${P}/me/team/members/:registrationId/reissue-link`, () =>
-        apiError(409, code, 'Nope.'),
-      ),
-    );
-    renderPortal('/me', { session });
-    await userEvent.click(await screen.findByRole('button', { name: 'New link' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Make new link' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(text);
-    expect(screen.queryByText(/New link emailed/)).not.toBeInTheDocument();
+    // Only organisers make new links.
+    expect(screen.queryByRole('button', { name: 'New link' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Ask the organisers: they send you a new one/)).toBeInTheDocument();
   });
 
   it('uploads a new receipt after a rejection', async () => {

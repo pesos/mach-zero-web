@@ -4,7 +4,7 @@ import { registrationDraft } from './registration.ts';
 import { renderSample, sampleView } from './sample.ts';
 
 const parts = Object.entries(registrationDraft);
-const MEMBER = ['name', 'email', 'participantCode', 'isLeader'];
+const MEMBER = ['name', 'email', 'participantCode', 'isLeader', 'linkUrl'];
 
 /** Every variable used outside {{#members}}…{{/members}}. */
 function outsideMembers(template: string): string[] {
@@ -58,43 +58,83 @@ describe('the registration email', () => {
     );
   });
 
-  it('greets the recipient with their own ID and dashboard button, and escapes names', () => {
+  it('greets the leader with their own ID and pass button, and escapes names', () => {
     const view = {
       ...sampleView,
       team: { name: 'Byte <Club>' },
-      member: { ...sampleView.member, name: '<b>Ravi</b>' },
-      members: sampleView.members.map((m, i) => (i === 1 ? { ...m, name: '<b>Ravi</b>' } : m)),
+      member: { ...sampleView.member, name: '<b>Asha</b>' },
+      members: sampleView.members.map((m, i) => (i === 0 ? { ...m, name: '<b>Asha</b>' } : m)),
     };
     const mail = renderSample(registrationDraft, view);
     expect(mail.subject).toBe('MachZero (PESOS X Silicon)');
     expect(mail.html).toContain('Byte &lt;Club&gt; is in');
-    expect(mail.html).toContain('Hi &lt;b&gt;Ravi&lt;/b&gt;');
-    expect(mail.html).not.toContain('<b>Ravi</b>');
+    expect(mail.html).toContain('Hi &lt;b&gt;Asha&lt;/b&gt;');
+    expect(mail.html).not.toContain('<b>Asha</b>');
     expect(mail.html).toContain(view.member.participantCode);
     expect(mail.html).toContain(`href="${view.member.linkUrl}"`);
     expect(mail.text).toContain(`Your pass: ${view.member.linkUrl}`);
-    expect(mail.text).toContain('Your participant ID: MZ-0002');
+    expect(mail.text).toContain('Your participant ID: MZ-0001');
+    expect(mail.html).toContain('you lead a team');
   });
 
-  it("lists the team's member names without anyone else's link", () => {
+  it('lists every teammate with their own link, for the leader to send on', () => {
     const mail = renderSample(registrationDraft);
     for (const m of sampleView.members) {
       expect(mail.html).toContain(m.name);
+      expect(mail.html).toContain(`href="${m.linkUrl}"`);
       expect(mail.text).toContain(`- ${m.name}`);
+      expect(mail.text).toContain(m.linkUrl);
     }
     expect(mail.html.match(/>Leader</g)).toHaveLength(1);
     expect(mail.text).toContain('- Asha Rao (leader)');
-    expect(mail.html).not.toContain('ek_asha');
-    expect(mail.text).not.toContain('ek_meera');
+    expect(mail.text).toContain('Send each teammate their own link');
+    expect(mail.html).not.toContain('old one has stopped working');
   });
 
-  it('says a link was replaced only when it was', () => {
-    const plain = renderSample(registrationDraft);
-    expect(plain.html).not.toContain('old one has stopped working');
-    expect(plain.text).not.toContain('old one has stopped working');
-    const again = renderSample(registrationDraft, { ...sampleView, linkReplaced: true });
-    expect(again.html).toContain('old one has stopped working');
-    expect(again.text).toContain('old one has stopped working');
+  it('gives the leader a replaced teammate link to send on', () => {
+    const url = 'https://machzero.vercel.app/me/ek_ravi_new';
+    const view = {
+      ...sampleView,
+      member: { ...sampleView.member, linkUrl: '' },
+      members: sampleView.members.map((m, i) => ({ ...m, linkUrl: i === 1 ? url : '' })),
+      linkReplaced: true,
+      replaced: { name: 'Ravi Kumar', linkUrl: url },
+    };
+    const mail = renderSample(registrationDraft, view);
+    expect(mail.html).toContain('New link for Ravi Kumar.');
+    expect(mail.html).toContain(`href="${url}"`);
+    expect(mail.text).toContain(
+      `New link for Ravi Kumar: their old one has stopped working. Send them this one:\n${url}`,
+    );
+    // Only that one link, and no "ask the organisers" or "send each teammate" lines.
+    expect(mail.html).not.toContain('ek_meera');
+    expect(mail.html).not.toContain('Ask the organisers');
+    expect(mail.html).not.toContain('Send each teammate');
+    expect(mail.html).not.toContain('Open my pass');
+  });
+
+  it('gives the leader the link of a member who joined later', () => {
+    const url = 'https://machzero.vercel.app/me/ek_dev';
+    const view = {
+      ...sampleView,
+      member: { ...sampleView.member, linkUrl: '' },
+      members: [
+        ...sampleView.members.map((m) => ({ ...m, linkUrl: '' })),
+        {
+          name: 'Dev Shah',
+          email: 'dev@example.com',
+          participantCode: 'MZ-0004',
+          isLeader: false,
+          linkUrl: url,
+        },
+      ],
+      memberAdded: true,
+      added: { name: 'Dev Shah', linkUrl: url },
+    };
+    const mail = renderSample(registrationDraft, view);
+    expect(mail.html).toContain('Dev Shah joined Byte Club.');
+    expect(mail.text).toContain(`Dev Shah joined Byte Club. Send them their pass link:\n${url}`);
+    expect(mail.html).not.toContain('Ask the organisers');
   });
 
   it('says to ask the organisers when there is no dashboard link', () => {
@@ -102,6 +142,7 @@ describe('the registration email', () => {
       ...sampleView,
       event: { ...sampleView.event, portalUrl: '' },
       member: { ...sampleView.member, linkUrl: '' },
+      members: sampleView.members.map((m) => ({ ...m, linkUrl: '' })),
     };
     const mail = renderSample(registrationDraft, view);
     expect(mail.html).not.toContain('Open my pass');

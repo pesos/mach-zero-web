@@ -21,7 +21,6 @@ import {
   WifiOffIcon,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useState } from 'react';
 import { ConfirmButton } from '@/components/ConfirmButton';
 import { ErrorText } from '@/components/ErrorText';
 import { ErrorPage } from '@/components/ErrorPage';
@@ -280,11 +279,9 @@ function Initial({ name }: { name: string }) {
   );
 }
 
-/** The leader's view: contacts, link activity, payment, new links. */
+/** The leader's view: contacts, link activity and payment. Organisers make new links. */
 function LeaderTeam() {
   const team = useMyTeam();
-  const [emailed, setEmailed] = useState<string | null>(null);
-  const reissue = usePortalMutation((portal, id: string) => portal.me.team.reissueMemberLink(id));
   const pay = usePortalMutation((portal, file: File) => portal.me.team.payReceipt(file));
   if (team.isPending) return <ListSkeleton label="Loading your team" />;
   if (team.isError) return <ErrorText error={team.error} />;
@@ -331,42 +328,13 @@ function LeaderTeam() {
                     .join(' · ')}
                 </p>
               </div>
-              {!m.isLeader && (
-                <ConfirmButton
-                  size="sm"
-                  variant="outline"
-                  title={`Make a new link for ${m.name}?`}
-                  description="Their old link stops working. The new link is emailed to them; you won't see it."
-                  confirm="Make new link"
-                  disabled={reissue.isPending}
-                  onConfirm={() => {
-                    setEmailed(null);
-                    reissue.mutate(m.registrationId, {
-                      onSuccess: () => setEmailed(m.name),
-                    });
-                  }}
-                >
-                  New link
-                </ConfirmButton>
-              )}
             </li>
           ))}
         </ul>
-        {emailed && (
-          <p role="status" className="text-sm text-success">
-            New link emailed to {emailed}
-          </p>
-        )}
-        <ErrorText
-          error={reissue.error}
-          message={
-            hasCode(reissue.error, 'MAILING_OFF')
-              ? 'Email is off for this event; ask an organiser to send a new link'
-              : hasCode(reissue.error, 'MAIL_FAILED')
-                ? 'The email could not be sent. Try again in a moment, or ask an organiser.'
-                : undefined
-          }
-        />
+        <p className="text-xs text-muted-foreground">
+          A teammate lost their link, or it leaked? Ask the organisers: they send you a new one to
+          pass on.
+        </p>
 
         {t.payment.mode !== 'none' && (
           <>

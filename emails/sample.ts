@@ -16,18 +16,21 @@ const people = [
     email: 'asha@example.com',
     participantCode: 'MZ-0001',
     isLeader: true,
+    linkUrl: link('ek_asha'),
   },
   {
     name: 'Ravi Kumar',
     email: 'ravi@example.com',
     participantCode: 'MZ-0002',
     isLeader: false,
+    linkUrl: link('ek_ravi'),
   },
   {
     name: 'Meera Iyer',
     email: 'meera@example.com',
     participantCode: 'MZ-0003',
     isLeader: false,
+    linkUrl: link('ek_meera'),
   },
 ];
 
@@ -44,9 +47,12 @@ export const sampleView = {
   team: { name: 'Byte Club' },
   memberCount: people.length,
   leader: people[0]!,
-  // One email goes to each member: the recipient is the second member here.
-  member: { ...people[1]!, linkUrl: link('ek_ravi') },
+  // Only the leader is mailed. On registering, every member's link is in the list.
+  member: people[0]!,
   linkReplaced: false,
+  replaced: { name: '', linkUrl: '' },
+  memberAdded: false,
+  added: { name: '', linkUrl: '' },
   members: people,
 };
 
