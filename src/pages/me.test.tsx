@@ -209,6 +209,55 @@ describe('the team leader’s page', () => {
     expect(screen.getByText(/Ask the organisers: they send you a new one/)).toBeInTheDocument();
   });
 
+  it('adds a forgotten member; their link is emailed to the leader', async () => {
+    let sent: unknown;
+    const session = asParticipant(leader);
+    server.use(
+      http.post(`${P}/me/team/members`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(
+          {
+            registrationId: 'r3',
+            name: 'Dev',
+            participantCode: 'PX-0003',
+            status: 'registered',
+            emailedTo: 'asha@example.com',
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    renderPortal('/me', { session });
+    expect(await screen.findByText('Add a member')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Name'), 'Dev');
+    await userEvent.type(screen.getByLabelText('Email'), 'dev@example.com');
+    await userEvent.click(screen.getByRole('button', { name: 'Add member' }));
+    expect(await screen.findByText(/Dev joined your team/)).toHaveTextContent(
+      'Their link was emailed to you (asha@example.com)',
+    );
+    expect(sent).toEqual({ name: 'Dev', email: 'dev@example.com', answers: {} });
+  });
+
+  it('asks for another receipt for members added after paying', async () => {
+    const session = asParticipant(leader, {
+      team: team({
+        status: 'confirmed',
+        payment: {
+          ...team().payment,
+          amountDue: 20000,
+          paidAmount: 40000,
+          proofs: [proof('approved')],
+          unpaid: [{ registrationId: 'r3', name: 'Dev' }],
+        },
+      }),
+    });
+    renderPortal('/me', { session });
+    expect(
+      await screen.findByText(/₹200 more for Dev, who joined after you paid/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Upload the receipt for the new members')).toBeInTheDocument();
+  });
+
   it('uploads a new receipt after a rejection', async () => {
     let proofs = [proof('rejected', 'Blurry')];
     const session = asParticipant(leader);

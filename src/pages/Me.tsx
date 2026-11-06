@@ -21,6 +21,7 @@ import {
   WifiOffIcon,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { AddMember } from '@/components/AddMember';
 import { ConfirmButton } from '@/components/ConfirmButton';
 import { ErrorText } from '@/components/ErrorText';
 import { ErrorPage } from '@/components/ErrorPage';
@@ -86,6 +87,7 @@ export function Me() {
       <RsvpCard me={data} />
       {data.status !== 'cancelled' && <UpdatesGroup />}
       {data.isLeader ? <LeaderTeam /> : <TeamSummary />}
+      {data.isLeader && <AddMember />}
       <Registration me={data} />
       <AssignmentSummary />
     </>
@@ -288,12 +290,16 @@ function LeaderTeam() {
   const t = team.data;
   const status = teamDisplayStatus(t);
   const latest = t.payment.proofs[0]?.status;
+  const paid = t.payment.proofs.some((p) => p.status === 'approved');
+  // After paying: another receipt for members added since (per-person fee).
+  const topUp = paid && t.payment.unpaid.length > 0 && t.status !== 'cancelled';
   const canPay =
-    t.payment.mode !== 'none' &&
-    (t.status === 'registered' || t.status === 'shortlisted') &&
-    latest !== 'pending' &&
-    latest !== 'approved' &&
-    (t.payment.mode === 'at_registration' || t.status === 'shortlisted');
+    (topUp && latest !== 'pending') ||
+    (t.payment.mode !== 'none' &&
+      (t.status === 'registered' || t.status === 'shortlisted') &&
+      latest !== 'pending' &&
+      latest !== 'approved' &&
+      (t.payment.mode === 'at_registration' || t.status === 'shortlisted'));
 
   return (
     <Card>
@@ -341,11 +347,18 @@ function LeaderTeam() {
             <Separator />
             <div className="grid gap-3 text-sm">
               <h3 className="font-semibold">Payment</h3>
-              {t.payment.amountDue !== null && (
+              {topUp ? (
                 <p>
-                  {formatMoney(t.payment.amountDue, t.payment.currency)} for the team
-                  {t.payment.deadline && `, by ${formatIST(t.payment.deadline)}`}.
+                  {formatMoney(t.payment.amountDue ?? 0, t.payment.currency)} more for{' '}
+                  {t.payment.unpaid.map((u) => u.name).join(', ')}, who joined after you paid.
                 </p>
+              ) : (
+                t.payment.amountDue !== null && (
+                  <p>
+                    {formatMoney(t.payment.amountDue, t.payment.currency)} for the team
+                    {t.payment.deadline && `, by ${formatIST(t.payment.deadline)}`}.
+                  </p>
+                )
               )}
               {t.payment.proofs.length > 0 && (
                 <ul className="grid gap-1 text-muted-foreground">
@@ -376,7 +389,9 @@ function LeaderTeam() {
                     <Label htmlFor="pay-receipt">
                       {latest === 'rejected'
                         ? 'Upload a new receipt'
-                        : 'Upload the payment receipt'}
+                        : topUp
+                          ? 'Upload the receipt for the new members'
+                          : 'Upload the payment receipt'}
                     </Label>
                     <Input
                       id="pay-receipt"

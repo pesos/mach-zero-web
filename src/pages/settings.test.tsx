@@ -70,6 +70,7 @@ describe('settings', () => {
             currency: null,
             deadline: null,
             proofs: [],
+            unpaid: [],
           },
           members: [
             teamMember('r1', 'Asha', { isLeader: true }),
