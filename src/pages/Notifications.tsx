@@ -10,6 +10,7 @@ import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
 import { FeedTabs, groupCounts } from '@/components/FeedTabs';
 import { Markdown } from '@/components/Markdown';
+import { MarkdownTextarea } from '@/components/MarkdownTextarea';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,7 +21,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Textarea } from '@/components/ui/textarea';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { ConfirmedOnly } from '@/components/ConfirmedOnly';
@@ -109,7 +109,12 @@ function SendForm({ channels }: { channels: Schemas['Channel'][] }) {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="body">Message</Label>
-            <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} required />
+            <MarkdownTextarea
+              id="body"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              required
+            />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox id="urgent" checked={urgent} onCheckedChange={(v) => setUrgent(v === true)} />

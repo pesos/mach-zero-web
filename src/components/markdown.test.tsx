@@ -1,6 +1,10 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 import { Markdown } from './Markdown';
+import { MarkdownTextarea } from './MarkdownTextarea';
+import { TooltipProvider } from './ui/tooltip';
 
 describe('Markdown', () => {
   it('renders formatting and opens links in a new tab', () => {
@@ -26,5 +30,29 @@ describe('Markdown', () => {
     render(<Markdown inert>{'[site](https://x.example)'}</Markdown>);
     expect(screen.queryByRole('link')).toBeNull();
     expect(screen.getByText('site')).toBeInTheDocument();
+  });
+});
+
+function Controlled() {
+  const [value, setValue] = useState('');
+  return (
+    <MarkdownTextarea aria-label="Body" value={value} onChange={(e) => setValue(e.target.value)} />
+  );
+}
+
+describe('MarkdownTextarea', () => {
+  it('bolds the selection and previews the result', async () => {
+    const user = userEvent.setup();
+    render(<Controlled />, { wrapper: TooltipProvider });
+    const box = screen.getByRole('textbox', { name: 'Body' });
+    await user.type(box, 'pay now');
+    (box as HTMLTextAreaElement).setSelectionRange(4, 7);
+    await user.click(screen.getByRole('button', { name: 'Bold' }));
+    expect(box).toHaveValue('pay **now**');
+
+    await user.click(screen.getByRole('tab', { name: 'Preview' }));
+    expect(screen.getByText('now').tagName).toBe('STRONG');
+    await user.click(screen.getByRole('tab', { name: 'Write' }));
+    expect(screen.getByRole('textbox', { name: 'Body' })).toHaveValue('pay **now**');
   });
 });
