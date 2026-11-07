@@ -2,7 +2,16 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
-import { asParticipant, me, png, proof, team, teamMember, uploadTicket } from '@/test/fixtures';
+import {
+  asParticipant,
+  asStaff,
+  me,
+  png,
+  proof,
+  team,
+  teamMember,
+  uploadTicket,
+} from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, P, portalEvent, portalInfo, server, token } from '@/test/server';
 
@@ -360,5 +369,13 @@ describe('the team leader’s page', () => {
     server.use(http.get(`${P}/me/team`, () => apiError(500, 'INTERNAL', 'Team trouble.')));
     renderPortal('/me', { session });
     expect(await screen.findByRole('alert')).toHaveTextContent('Team trouble.');
+  });
+});
+
+describe('staff on the participant page', () => {
+  it('sends a signed-in judge to judging instead of signing them out', async () => {
+    const session = asStaff('judge');
+    renderPortal('/me', { session });
+    await waitFor(() => expect(window.location.pathname).toBe('/judge'));
   });
 });

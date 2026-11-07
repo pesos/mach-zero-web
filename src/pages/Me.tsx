@@ -32,18 +32,34 @@ import { UpdatesGroup } from '@/components/UpdatesGroup';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router';
+import { Link, Navigate, useParams } from 'react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { hasCode } from '@/lib/eventkit';
 import { cn } from '@/lib/utils';
+import { homeFor, useWho } from '@/lib/staff';
 
 type Me = Schemas['Me'];
 
 /** A participant's page, opened through their personal link. */
+/**
+ * The participant dashboard. Staff who land here without a link (e.g. from the
+ * menu) are sent to their own home instead: /me is not theirs.
+ */
 export function Me() {
+  const { token } = useParams();
+  const who = useWho();
+  const staff = who.kind === 'staff' || who.kind === 'client';
+  if (!token && staff) {
+    if (who.loading) return <MeSkeleton />;
+    return <Navigate to={who.role ? homeFor(who.role) : '/'} replace />;
+  }
+  return <ParticipantMe />;
+}
+
+function ParticipantMe() {
   const { paths } = usePortalInfo().data!;
   const link = useSecretLink(paths);
   const me = useMe();

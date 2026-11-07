@@ -2,7 +2,7 @@ import type { Schemas } from '@eventkit/sdk';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { asParticipant, asStaff, notification } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { apiError, E, P, server } from '@/test/server';
@@ -88,6 +88,34 @@ describe('notifications', () => {
       'aria-selected',
       'false',
     );
+  });
+
+  it('lets an admin delete a notification for everyone', async () => {
+    const session = asStaff('admin');
+    let deleted = '';
+    server.use(
+      http.get(`${E}/notifications`, () => HttpResponse.json([notification({ id: 'n1' })])),
+      http.get(`${E}/channels`, () => HttpResponse.json([])),
+      http.delete(`${E}/channels/:channelId/notifications/:id`, ({ params }) => {
+        deleted = String(params.id);
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderPortal('/notifications', { session });
+    const title = notification().title;
+    await userEvent.click(await screen.findByRole('button', { name: `Delete "${title}"` }));
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
+    await vi.waitFor(() => expect(deleted).toBe('n1'));
+  });
+
+  it('participants can’t delete notifications', async () => {
+    const session = asParticipant();
+    server.use(http.get(`${P}/me/notifications`, () => HttpResponse.json([notification()])));
+    renderPortal('/notifications', { session });
+    expect(await screen.findByText(notification().title)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Delete/ })).not.toBeInTheDocument();
   });
 
   it('lets staff send to the channels they may use', async () => {

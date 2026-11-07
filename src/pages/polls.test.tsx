@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { asParticipant, asStaff, poll } from '@/test/fixtures';
 import { renderPortal } from '@/test/render';
 import { E, P, portalEvent, portalInfo, server } from '@/test/server';
@@ -121,5 +121,74 @@ describe('before the team is confirmed', () => {
       expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
     }
     expect(screen.getByRole('link', { name: 'My registration' })).toBeInTheDocument();
+  });
+
+  it('takes a multi-select, a rating and a text answer', async () => {
+    const bodies: unknown[] = [];
+    const session = asParticipant();
+    server.use(
+      http.get(`${P}/me/polls`, () =>
+        HttpResponse.json([
+          poll({
+            id: 'm',
+            question: 'Talks?',
+            type: 'multi_choice',
+            options: [
+              { id: 'a', label: 'AI', position: 0, votes: null },
+              { id: 'b', label: 'Web', position: 1, votes: null },
+            ],
+          }),
+          poll({ id: 'r', question: 'Rate the food', type: 'rating', scaleMax: 3, options: [] }),
+          poll({ id: 't', question: 'Feedback?', type: 'long_text', options: [] }),
+        ]),
+      ),
+      http.put(`${P}/me/polls/:pollId/vote`, async ({ request, params }) => {
+        bodies.push({ [params.pollId as string]: await request.json() });
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderPortal('/polls', { session });
+    const talks = await screen.findByRole('group', { name: 'Talks?' });
+    await userEvent.click(within(talks).getByRole('checkbox', { name: 'AI' }));
+    await userEvent.click(within(talks).getByRole('checkbox', { name: 'Web' }));
+    const saves = screen.getAllByRole('button', { name: 'Save answer' });
+    await userEvent.click(saves[0]!);
+    const food = screen.getByRole('radiogroup', { name: 'Rate the food' });
+    expect(within(food).getAllByRole('radio')).toHaveLength(3);
+    await userEvent.click(within(food).getByRole('radio', { name: '2' }));
+    await userEvent.click(screen.getAllByRole('button', { name: 'Save answer' })[1]!);
+    await userEvent.type(screen.getByRole('textbox', { name: 'Feedback?' }), 'Loved it');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Save answer' })[2]!);
+    await vi.waitFor(() =>
+      expect(bodies).toEqual([
+        { m: { optionIds: ['a', 'b'] } },
+        { r: { value: 2 } },
+        { t: { value: 'Loved it' } },
+      ]),
+    );
+  });
+
+  it('shows number statistics when results are open', async () => {
+    const session = asParticipant();
+    server.use(
+      http.get(`${P}/me/polls`, () =>
+        HttpResponse.json([
+          poll({
+            id: 'n',
+            question: 'Hours slept?',
+            type: 'number',
+            options: [],
+            canVote: false,
+            closed: true,
+            totalVotes: 2,
+            stats: { count: 2, average: 5.5, min: 4, max: 7, distribution: null },
+            myAnswer: { optionId: null, optionIds: [], value: 7 },
+          }),
+        ]),
+      ),
+    );
+    renderPortal('/polls', { session });
+    expect(await screen.findByText('5.5')).toBeInTheDocument();
+    expect(screen.getByText(/Your answer:/)).toHaveTextContent('Your answer: 7');
   });
 });

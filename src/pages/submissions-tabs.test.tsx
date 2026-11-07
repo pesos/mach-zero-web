@@ -36,6 +36,7 @@ const mine = (
   deadline: null,
   fields: [field],
   open,
+  eliminated: false,
   entry: null,
 });
 

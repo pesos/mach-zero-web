@@ -124,10 +124,11 @@ describe('judging', () => {
     idea.focus();
     await userEvent.keyboard('{ArrowRight}{ArrowRight}');
 
-    const search = screen.getByRole('combobox');
-    expect(search).toHaveValue('Byte Club');
-    await userEvent.click(search);
+    const picker = screen.getByRole('combobox', { name: 'Team' });
+    expect(picker).toHaveTextContent('Byte Club');
+    await userEvent.click(picker);
     expect(screen.getAllByRole('option')).toHaveLength(2);
+    const search = screen.getByPlaceholderText('Search a team or member');
     await userEvent.type(search, 'ravi');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     expect(screen.getByRole('option', { name: /Null Pointers/ })).toHaveTextContent('Not scored');
@@ -135,12 +136,17 @@ describe('judging', () => {
     expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeVisible();
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('combobox'));
-    await userEvent.type(screen.getByRole('combobox'), 'zzz');
+    await userEvent.click(screen.getByRole('combobox', { name: 'Team' }));
+    await userEvent.type(screen.getByPlaceholderText('Search a team or member'), 'zzz');
     expect(screen.getByText(/No team matches/)).toBeInTheDocument();
-    await userEvent.clear(screen.getByRole('combobox'));
+    await userEvent.clear(screen.getByPlaceholderText('Search a team or member'));
     await userEvent.click(screen.getByRole('option', { name: /Byte Club/ }));
     expect(await screen.findByRole('heading', { name: 'Byte Club' })).toBeVisible();
+    // A tap outside closes the list.
+    await userEvent.click(screen.getByRole('combobox', { name: 'Team' }));
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    await userEvent.click(document.body);
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
     expect(screen.getByRole('slider', { name: 'Idea' })).toHaveAttribute('aria-valuenow', '2');
   });
 
@@ -171,9 +177,10 @@ describe('judging', () => {
       http.get(`${E}/judging/teams`, () => HttpResponse.json([])),
     );
     renderPortal('/judge', { session });
-    const picker = await screen.findByLabelText('Round');
-    expect(picker).toHaveValue('rd2');
-    await userEvent.selectOptions(picker, 'rd1');
+    const picker = await screen.findByRole('combobox', { name: 'Round' });
+    expect(picker).toHaveTextContent('Round 2');
+    await userEvent.click(picker);
+    await userEvent.click(await screen.findByRole('option', { name: 'Round 1' }));
     await waitFor(() => expect(seen).toContain('rd1'));
     expect(seen[0]).toBe('rd2');
   });

@@ -4,13 +4,16 @@ import {
   useEventQuery,
   useMyNotifications,
   useNotifications,
+  useSession,
 } from '@eventkit/sdk/react';
-import { BellOffIcon, ClockIcon, HashIcon, InfoIcon, SendIcon } from 'lucide-react';
+import { BellOffIcon, ClockIcon, HashIcon, InfoIcon, SendIcon, Trash2Icon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { ConfirmButton } from '@/components/ConfirmButton';
 import { ErrorText } from '@/components/ErrorText';
 import { FeedTabs, groupCounts } from '@/components/FeedTabs';
 import { Markdown } from '@/components/Markdown';
 import { MarkdownTextarea } from '@/components/MarkdownTextarea';
+import { SearchInput } from '@/components/SearchInput';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -21,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { useListFilter } from '@/hooks/useListFilter';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { ConfirmedOnly } from '@/components/ConfirmedOnly';
@@ -183,6 +187,8 @@ function Feed({ items, error }: { items: Schemas['Notification'][] | undefined; 
   );
 }
 
+const noteText = (n: Schemas['Notification']) => [n.title, n.body, n.sender.name, n.channel.name];
+
 function CardList({
   items,
   empty,
@@ -190,6 +196,7 @@ function CardList({
   items: Schemas['Notification'][] | undefined;
   empty: string;
 }) {
+  const search = useListFilter(items ?? [], noteText);
   if (items?.length === 0)
     return (
       <div className="grid justify-items-center gap-2 rounded-xl border border-dashed bg-card/70 p-8 text-center">
@@ -197,7 +204,49 @@ function CardList({
         <p className="text-sm text-muted-foreground">{empty}</p>
       </div>
     );
-  return items?.map((n) => <NotificationCard key={n.id} n={n} />);
+  return (
+    <>
+      {items && items.length > 1 && (
+        <SearchInput label="Search notifications" value={search.query} onChange={search.setQuery} />
+      )}
+      {search.active && search.filtered.length === 0 && (
+        <p className="text-sm text-muted-foreground">No notification matches.</p>
+      )}
+      {search.filtered.map((n) => (
+        <NotificationCard key={n.id} n={n} />
+      ))}
+    </>
+  );
+}
+
+/** Admins delete any notification; a volunteer only one they sent. For everyone. */
+function DeleteNotification({ n }: { n: Schemas['Notification'] }) {
+  const who = useWho();
+  const { who: session } = useSession();
+  const remove = useEventMutation((e) => e.channels.removeNotification(n.channel.id, n.id));
+  const allowed = who.role === 'admin' || (who.role === 'volunteer' && session?.id === n.sender.id);
+  if (!allowed) return null;
+  return (
+    <>
+      <ConfirmButton
+        size="icon-sm"
+        variant="ghost"
+        aria-label={`Delete "${n.title}"`}
+        title="Delete this notification?"
+        description={
+          n.priority === 'urgent'
+            ? 'It disappears from everyone’s feed. The push already sent to phones can’t be taken back.'
+            : 'It disappears from everyone’s feed.'
+        }
+        confirm="Delete"
+        disabled={remove.isPending}
+        onConfirm={() => remove.mutate()}
+      >
+        <Trash2Icon aria-hidden />
+      </ConfirmButton>
+      <ErrorText error={remove.error} />
+    </>
+  );
 }
 
 /** Channel and sender as pills, when it was sent, then the message, with an accent bar on the left. */
@@ -231,15 +280,18 @@ function NotificationCard({ n }: { n: Schemas['Notification'] }) {
             {n.sender.name}
           </Badge>
           {urgent && <Badge variant="destructive">Urgent</Badge>}
+          <span className="ml-auto">
+            <DeleteNotification n={n} />
+          </span>
         </div>
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <ClockIcon className="size-4" aria-hidden />
           <time dateTime={n.sentAt}>{formatIST(n.sentAt)}</time>
           <span className="text-muted-foreground/60">({timeAgo(n.sentAt)})</span>
         </p>
-        <CardTitle className="text-lg leading-snug">{n.title}</CardTitle>
+        <CardTitle className="text-lg leading-snug wrap-anywhere">{n.title}</CardTitle>
       </CardHeader>
-      <CardContent className="leading-relaxed text-foreground/75">
+      <CardContent className="leading-relaxed wrap-anywhere text-foreground/75">
         <Markdown>{n.body}</Markdown>
       </CardContent>
     </Card>

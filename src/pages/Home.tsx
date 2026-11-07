@@ -101,15 +101,15 @@ export function Home() {
         aria-label="Prizes"
         className="flex w-full flex-col gap-5 rounded-2xl border border-primary/40 bg-gradient-to-br from-card/90 via-card/90 to-primary/25 p-5 backdrop-blur-md sm:p-6 lg:flex-row lg:items-center lg:justify-between"
       >
-        <div className="flex items-center gap-4 sm:gap-5">
-          <span className="grid size-14 shrink-0 place-items-center rounded-xl border border-primary/70 bg-primary/10 text-primary sm:size-16">
-            <TrophyIcon aria-hidden className="size-7 sm:size-8" />
+        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-primary/70 bg-primary/10 text-primary min-[360px]:size-14 sm:size-16">
+            <TrophyIcon aria-hidden className="size-6 sm:size-8" />
           </span>
-          <div className="grid gap-1">
+          <div className="grid min-w-0 gap-1">
             <p className="font-display text-xs tracking-[0.2em] text-foreground/70 uppercase">
               {prizes.label}
             </p>
-            <p className="bg-gradient-to-b from-white to-primary bg-clip-text font-display text-4xl leading-tight text-transparent sm:text-5xl">
+            <p className="bg-gradient-to-b from-white to-primary bg-clip-text font-display text-3xl leading-tight text-transparent min-[360px]:text-4xl sm:text-5xl">
               {prizes.cash}
             </p>
           </div>

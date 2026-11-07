@@ -140,6 +140,7 @@ function ByRound({ items, empty }: { items: Schemas['PortalSubmission'][]; empty
 function saveMessage(error: unknown): string | undefined {
   if (hasCode(error, 'ROUND_CLOSED'))
     return 'This round is closed, so answers can no longer change.';
+  if (hasCode(error, 'TEAM_ELIMINATED')) return 'Your team didn’t go on to this round.';
   if (hasCode(error, 'REGISTRATION_CANCELLED')) {
     return 'Your registration is cancelled, so you cannot submit.';
   }
@@ -165,12 +166,16 @@ function SubmissionCard({ submission: s }: { submission: Schemas['PortalSubmissi
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base wrap-anywhere">
           {s.title}
-          {!s.open && (
-            <Badge variant="secondary">
-              <LockIcon aria-hidden /> Closed
-            </Badge>
+          {s.eliminated ? (
+            <Badge variant="secondary">Not in this round</Badge>
+          ) : (
+            !s.open && (
+              <Badge variant="secondary">
+                <LockIcon aria-hidden /> Closed
+              </Badge>
+            )
           )}
         </CardTitle>
         {s.description && (
@@ -211,10 +216,16 @@ function SubmissionCard({ submission: s }: { submission: Schemas['PortalSubmissi
               prefix={`sub-${s.id}`}
             />
           </fieldset>
-          {!s.open && (
+          {s.eliminated ? (
             <p className="text-sm text-muted-foreground">
-              Closed: answers can no longer be changed.
+              Your team didn’t go on to this round, so it can’t submit here.
             </p>
+          ) : (
+            !s.open && (
+              <p className="text-sm text-muted-foreground">
+                Closed: answers can no longer be changed.
+              </p>
+            )
           )}
           <ErrorText error={save.error} message={saveMessage(save.error)} />
           {problems.length > 0 && (

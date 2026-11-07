@@ -18,6 +18,8 @@ import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { ConfirmedOnly } from '@/components/ConfirmedOnly';
+import { SearchInput } from '@/components/SearchInput';
+import { useListFilter } from '@/hooks/useListFilter';
 
 /** Averages can be fractional: one decimal at most. */
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
@@ -120,6 +122,8 @@ function NotYet() {
   );
 }
 
+const entryText = (e: Schemas['Leaderboard']['entries'][number]) => [e.team.name];
+
 function Board({
   board,
   error,
@@ -129,9 +133,11 @@ function Board({
   error: unknown;
   criteria?: Schemas['Criterion'][];
 }) {
+  const search = useListFilter(board?.entries ?? [], entryText);
   if (isEventKitError(error, 'LEADERBOARD_HIDDEN')) return <NotYet />;
   if (!board && !error) return <ListSkeleton label="Loading the leaderboard" rows={5} />;
   const names = new Map(criteria?.map((c) => [c.id, c.name]));
+  const entries = search.filtered;
   return (
     <Card>
       <CardHeader>
@@ -152,9 +158,15 @@ function Board({
         {board?.entries.length === 0 && (
           <p className="text-sm text-muted-foreground">No scores yet.</p>
         )}
-        {board && board.entries.length > 0 && (
+        {board && board.entries.length > 5 && (
+          <SearchInput label="Search teams" value={search.query} onChange={search.setQuery} />
+        )}
+        {search.active && entries.length === 0 && (
+          <p className="text-sm text-muted-foreground">No team matches.</p>
+        )}
+        {entries.length > 0 && (
           <ol aria-label="Leaderboard" className="grid divide-y">
-            {board.entries.map((e) => (
+            {entries.map((e) => (
               <li key={e.team.id} className="flex items-center gap-3 py-2.5 text-sm">
                 <span
                   className={cn(
@@ -165,7 +177,7 @@ function Board({
                   {e.rank}
                 </span>
                 <span className="grid min-w-0 gap-0.5">
-                  <span className="font-medium">{e.team.name}</span>
+                  <span className="font-medium wrap-anywhere">{e.team.name}</span>
                   {criteria && (
                     <span className="text-xs text-muted-foreground">
                       {e.judges} {e.judges === 1 ? 'judge' : 'judges'}

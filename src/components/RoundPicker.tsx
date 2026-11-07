@@ -1,6 +1,12 @@
 import type { RoundOption } from '@/lib/rounds';
 import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 /** A dropdown of rounds; renders nothing when there is nothing to choose. */
 export function RoundPicker({
@@ -14,16 +20,21 @@ export function RoundPicker({
 }) {
   if (rounds.length < 2) return null;
   return (
-    <div className="grid max-w-xs gap-2">
+    <div className="grid w-full gap-2 sm:max-w-xs">
       <Label htmlFor="round">Round</Label>
-      <NativeSelect id="round" value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
-        {rounds.map((r) => (
-          <NativeSelectOption key={r.id} value={r.id}>
-            {r.name}
-            {r.phase === 'draft' ? ' (draft)' : ''}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
+      <Select value={value ?? ''} onValueChange={onChange}>
+        <SelectTrigger id="round" className="w-full min-w-0">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {rounds.map((r) => (
+            <SelectItem key={r.id} value={r.id}>
+              {r.name}
+              {r.phase === 'draft' ? ' (draft)' : ''}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

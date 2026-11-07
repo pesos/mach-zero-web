@@ -31,6 +31,7 @@ const submission = (
   deadline: null,
   fields: [field()],
   open: true,
+  eliminated: false,
   entry: null,
   ...over,
 });
@@ -178,7 +179,17 @@ describe('a participant’s submissions', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
+  it('tells a team that didn’t go on to a round', async () => {
+    const session = asParticipant();
+    mine([submission({ open: false, eliminated: true })]);
+    renderPortal('/submissions', { session });
+    expect(await screen.findByText('Not in this round')).toBeInTheDocument();
+    expect(screen.getByText(/didn’t go on to this round/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  });
+
   it.each([
+    ['TEAM_ELIMINATED', 409, 'didn’t go on to this round'],
     ['ROUND_CLOSED', 409, 'This round is closed'],
     ['REGISTRATION_CANCELLED', 403, 'Your registration is cancelled'],
   ])('explains a save refused with %s', async (code, status, text) => {

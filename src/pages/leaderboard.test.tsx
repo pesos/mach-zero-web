@@ -113,9 +113,10 @@ describe('leaderboard', () => {
       }),
     );
     renderPortal('/leaderboard', { session });
-    const picker = await screen.findByLabelText('Round');
-    expect(picker).toHaveValue('rd2');
-    await userEvent.selectOptions(picker, 'rd1');
+    const picker = await screen.findByRole('combobox', { name: 'Round' });
+    await waitFor(() => expect(asked).toContain('rd2'));
+    await userEvent.click(picker);
+    await userEvent.click(await screen.findByRole('option', { name: /Round 1/ }));
     await waitFor(() => expect(asked).toContain('rd1'));
   });
 
@@ -133,9 +134,10 @@ describe('leaderboard', () => {
       }),
     );
     renderPortal('/leaderboard', { session });
-    const picker = await screen.findByLabelText('Round');
+    const picker = await screen.findByRole('combobox', { name: 'Round' });
     await waitFor(() => expect(asked).toEqual(['rd2']));
-    await userEvent.selectOptions(picker, 'rd1');
+    await userEvent.click(picker);
+    await userEvent.click(await screen.findByRole('option', { name: /Round 1/ }));
     await waitFor(() => expect(asked).toContain('rd1'));
   });
 });

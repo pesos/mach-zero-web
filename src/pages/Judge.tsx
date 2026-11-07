@@ -7,7 +7,7 @@ import {
   ChevronRightIcon,
   SearchIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
 import { RoundPicker } from '@/components/RoundPicker';
@@ -17,8 +17,16 @@ import { StaffOnly } from '@/components/StaffOnly';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
@@ -186,8 +194,8 @@ function ProgressPill({ progress }: { progress: Progress }) {
 }
 
 /**
- * A combobox: shows the current team; typing filters by team or member name,
- * the arrow opens the full list. Arrow keys move, Enter picks, Escape closes.
+ * The current team as a button; it opens a searchable list (by team or member
+ * name). A tap outside, Escape or picking a team closes it.
  */
 function TeamPicker({
   teams,
@@ -202,132 +210,64 @@ function TeamPicker({
 }) {
   const current = teams.find((t) => t.id === value)!;
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [active, setActive] = useState(0);
-  const listRef = useRef<HTMLUListElement>(null);
-  const q = query.trim().toLowerCase();
-  const shown = q
-    ? teams.filter(
-        (t) =>
-          t.name.toLowerCase().includes(q) || t.members.some((m) => m.toLowerCase().includes(q)),
-      )
-    : teams;
-
-  const show = () => {
-    setOpen(true);
-    setActive(
-      Math.max(
-        0,
-        shown.findIndex((t) => t.id === value),
-      ),
-    );
-  };
-  const close = () => {
-    setOpen(false);
-    setQuery('');
-  };
-  const pick = (id: string) => {
-    onChange(id);
-    close();
-  };
-  useEffect(() => {
-    if (open) listRef.current?.children[active]?.scrollIntoView({ block: 'nearest' });
-  }, [open, active]);
-
   return (
-    <div
-      className="relative"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) close();
-      }}
-    >
-      <SearchIcon
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-      />
-      <Input
-        id="team-search"
-        role="combobox"
-        aria-expanded={open}
-        aria-controls="team-list"
-        aria-activedescendant={open && shown[active] ? `team-${shown[active].id}` : undefined}
-        autoComplete="off"
-        className="h-11 pr-10 pl-9 text-base"
-        placeholder={current.name}
-        value={open ? query : current.name}
-        onFocus={show}
-        onClick={show}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setActive(0);
-          setOpen(true);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (!open) return show();
-            setActive((i) => Math.min(i + 1, shown.length - 1));
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setActive((i) => Math.max(i - 1, 0));
-          } else if (e.key === 'Enter' && open) {
-            e.preventDefault();
-            if (shown[active]) pick(shown[active].id);
-          } else if (e.key === 'Escape') {
-            close();
-          }
-        }}
-      />
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label={open ? 'Close the team list' : 'Show all teams'}
-        className="absolute inset-y-0 right-0 grid w-10 place-items-center text-muted-foreground"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => (open ? close() : (setQuery(''), show()))}
-      >
-        <ChevronDownIcon className={cn('size-4 transition-transform', open && 'rotate-180')} />
-      </button>
-      {open && (
-        <ul
-          ref={listRef}
-          id="team-list"
-          role="listbox"
-          aria-label="Teams"
-          className="absolute inset-x-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id="team-search"
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-11 w-full min-w-0 justify-between gap-2 px-3 text-base font-normal"
         >
-          {shown.length === 0 && (
-            <li className="px-3 py-2 text-sm text-muted-foreground">No team matches “{query}”.</li>
-          )}
-          {shown.map((t, i) => (
-            <li
-              key={t.id}
-              id={`team-${t.id}`}
-              role="option"
-              aria-selected={t.id === value}
-              className={cn(
-                'flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2',
-                i === active && 'bg-accent text-accent-foreground',
-              )}
-              onMouseDown={(e) => e.preventDefault()}
-              onMouseEnter={() => setActive(i)}
-              onClick={() => pick(t.id)}
-            >
-              <span className="grid min-w-0">
-                <span className="flex items-center gap-1.5 truncate font-medium">
-                  {t.id === value && <CheckIcon className="size-3.5 text-primary" aria-hidden />}
-                  {t.name}
+          <span className="flex min-w-0 items-center gap-2">
+            <SearchIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">{current.name}</span>
+          </span>
+          <ChevronDownIcon
+            aria-hidden
+            className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')}
+          />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-(--radix-popover-trigger-width) max-w-[calc(100vw-2rem)] p-0"
+      >
+        <Command loop>
+          <CommandInput placeholder="Search a team or member" aria-label="Search teams" />
+          <CommandList className="max-h-[min(18rem,50dvh)]">
+            <CommandEmpty>No team matches.</CommandEmpty>
+            {teams.map((t) => (
+              <CommandItem
+                key={t.id}
+                value={t.id}
+                keywords={[t.name, ...t.members]}
+                onSelect={() => {
+                  onChange(t.id);
+                  setOpen(false);
+                }}
+                className="justify-between gap-3 rounded-lg px-3 py-2"
+              >
+                <span className="grid min-w-0">
+                  <span className="flex items-center gap-1.5 font-medium wrap-anywhere">
+                    {t.id === value && (
+                      <CheckIcon className="size-3.5 shrink-0 text-primary" aria-hidden />
+                    )}
+                    {t.name}
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {t.members.join(', ')}
+                  </span>
                 </span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {t.members.join(', ')}
-                </span>
-              </span>
-              <ProgressPill progress={progressOf(t, criteria)} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+                <ProgressPill progress={progressOf(t, criteria)} />
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -517,7 +457,7 @@ function ScoreSlider({
         )}
       />
       {ticks.length > 0 && (
-        <div className="-mt-1 flex justify-between px-0.5" aria-hidden>
+        <div className="-mt-1 flex min-w-0 justify-between gap-0.5 px-0.5" aria-hidden>
           {ticks.map((n) => (
             <button
               key={n}
@@ -525,7 +465,8 @@ function ScoreSlider({
               tabIndex={-1}
               onClick={() => onChange(n)}
               className={cn(
-                'grid size-6 place-items-center rounded-full text-xs tabular-nums transition-colors',
+                // Shrinks on narrow phones so eleven ticks (0–10) always fit.
+                'grid aspect-square max-w-6 min-w-0 flex-1 basis-0 place-items-center rounded-full text-[0.7rem] tabular-nums transition-colors sm:text-xs',
                 n === value
                   ? 'bg-primary font-semibold text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',

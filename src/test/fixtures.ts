@@ -46,6 +46,7 @@ export const teamMember = (
   isLeader: false,
   answers: {},
   linkLastUsedAt: null,
+  linkStored: null,
   ...overrides,
 });
 
@@ -100,6 +101,8 @@ export function poll(overrides: Partial<Schemas['Poll']> = {}): Schemas['Poll'] 
   return {
     id: 'poll1',
     question: 'Lunch?',
+    type: 'choice',
+    scaleMax: null,
     audience: ['participant'],
     closesAt: null,
     closed: false,
@@ -112,7 +115,9 @@ export function poll(overrides: Partial<Schemas['Poll']> = {}): Schemas['Poll'] 
       { id: 'o2', label: 'Non-veg', position: 1, votes: null },
     ],
     totalVotes: null,
+    stats: null,
     myVote: null,
+    myAnswer: null,
     canVote: true,
     canManage: false,
     optionsLocked: false,
@@ -142,6 +147,7 @@ export function round(overrides: Partial<Schemas['Round']> = {}): Schemas['Round
     name: 'Round 1',
     position: 0,
     phase: 'released',
+    kind: 'normal',
     createdAt: T0,
     updatedAt: T0,
     ...overrides,

@@ -125,7 +125,11 @@ describe('outside now', () => {
     );
     renderPortal('/outside', { session: asStaff('volunteer') });
     const row = await screen.findByRole('row', { name: /Ravi/ });
-    expect(row).toHaveTextContent('PX-0002RaviByte Club—Bathroomvia Gate out7 min ago');
+    // Small screens fold the ID, team and reason under the name; wide ones have columns.
+    for (const text of ['PX-0002', 'Ravi', 'Byte Club', '—', 'Bathroom', 'via Gate out']) {
+      expect(row).toHaveTextContent(text);
+    }
+    expect(row).toHaveTextContent(/7 min ago$/);
     expect(screen.getByText('1 outside')).toBeInTheDocument();
   });
 
