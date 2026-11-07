@@ -104,13 +104,20 @@ function SendForm({ channels }: { channels: Schemas['Channel'][] }) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="title">Title</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <Input
+                id="title"
+                maxLength={120}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
             </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="body">Message</Label>
             <MarkdownTextarea
               id="body"
+              maxLength={2000}
               value={body}
               onChange={(e) => setBody(e.target.value)}
               required
