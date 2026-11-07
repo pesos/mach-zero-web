@@ -9,6 +9,7 @@ import { BellOffIcon, ClockIcon, HashIcon, InfoIcon, SendIcon } from 'lucide-rea
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
 import { FeedTabs, groupCounts } from '@/components/FeedTabs';
+import { Markdown } from '@/components/Markdown';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -226,8 +227,8 @@ function NotificationCard({ n }: { n: Schemas['Notification'] }) {
         </p>
         <CardTitle className="text-lg leading-snug">{n.title}</CardTitle>
       </CardHeader>
-      <CardContent className="leading-relaxed whitespace-pre-line text-foreground/75">
-        {n.body}
+      <CardContent className="leading-relaxed text-foreground/75">
+        <Markdown>{n.body}</Markdown>
       </CardContent>
     </Card>
   );

@@ -41,6 +41,19 @@ describe('notifications', () => {
     expect(within(feed).getByText(/ago\)$|just now\)$/)).toBeInTheDocument();
   });
 
+  it('makes links in a notification clickable', async () => {
+    const session = asParticipant();
+    server.use(
+      http.get(`${P}/me/notifications`, () =>
+        HttpResponse.json([notification({ body: 'Repos here:\nhttps://drive.example/file/1' })]),
+      ),
+    );
+    renderPortal('/notifications', { session });
+    const link = await screen.findByRole('link', { name: 'https://drive.example/file/1' });
+    expect(link).toHaveAttribute('href', 'https://drive.example/file/1');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
   it('filters the feed to urgent ones, or to a channel picked from a menu', async () => {
     const session = asParticipant();
     server.use(
