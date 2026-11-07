@@ -56,7 +56,8 @@ describe('judging', () => {
     );
     renderPortal('/judge', { session: asStaff('judge') });
     expect(await screen.findByRole('heading', { name: 'Byte Club' })).toBeInTheDocument();
-    expect(screen.getByText('Asha, Ravi')).toBeInTheDocument();
+    expect(screen.getByText('Asha')).toBeInTheDocument();
+    expect(screen.getByText('Ravi')).toBeInTheDocument();
     expect(screen.getByText('How good is it')).toBeInTheDocument();
     const idea = screen.getByRole('slider', { name: 'Idea' });
     expect(idea).toHaveAttribute('aria-valuenow', '6');
@@ -84,6 +85,72 @@ describe('judging', () => {
       ],
     });
     expect(asked).toMatchObject({ criteria: 'rd1', scores: 'rd1' });
+  });
+
+  it('shows one team at a time, opening on the first one not fully scored', async () => {
+    judging([
+      {
+        id: 't1',
+        name: 'Byte Club',
+        members: ['Asha'],
+        myScores: [
+          { criterionId: 'c1', value: 6, comment: null } as Schemas['Score'],
+          { criterionId: 'c2', value: 3, comment: null } as Schemas['Score'],
+        ],
+      },
+      { id: 't2', name: 'Null Pointers', members: ['Ravi'], myScores: [] },
+      { id: 't3', name: 'Stack Smash', members: ['Meera', 'Kiran'], myScores: [] },
+    ]);
+    renderPortal('/judge', { session: asStaff('judge') });
+    expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Byte Club' })).not.toBeInTheDocument();
+    expect(screen.getByText('1 of 3 fully scored')).toBeInTheDocument();
+    expect(screen.getByText('2 / 3')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByRole('heading', { name: 'Stack Smash' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeVisible();
+  });
+
+  it('finds a team by team or member name, and keeps unsaved scores when switching', async () => {
+    judging([
+      { id: 't1', name: 'Byte Club', members: ['Asha'], myScores: [] },
+      { id: 't2', name: 'Null Pointers', members: ['Ravi'], myScores: [] },
+    ]);
+    renderPortal('/judge', { session: asStaff('judge') });
+    const idea = await screen.findByRole('slider', { name: 'Idea' });
+    idea.focus();
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+
+    const search = screen.getByRole('combobox');
+    expect(search).toHaveValue('Byte Club');
+    await userEvent.click(search);
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+    await userEvent.type(search, 'ravi');
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+    expect(screen.getByRole('option', { name: /Null Pointers/ })).toHaveTextContent('Not scored');
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeVisible();
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('combobox'));
+    await userEvent.type(screen.getByRole('combobox'), 'zzz');
+    expect(screen.getByText(/No team matches/)).toBeInTheDocument();
+    await userEvent.clear(screen.getByRole('combobox'));
+    await userEvent.click(screen.getByRole('option', { name: /Byte Club/ }));
+    expect(await screen.findByRole('heading', { name: 'Byte Club' })).toBeVisible();
+    expect(screen.getByRole('slider', { name: 'Idea' })).toHaveAttribute('aria-valuenow', '2');
+  });
+
+  it('opens the team named in the link', async () => {
+    judging([
+      { id: 't1', name: 'Byte Club', members: ['Asha'], myScores: [] },
+      { id: 't2', name: 'Null Pointers', members: ['Ravi'], myScores: [] },
+    ]);
+    renderPortal('/judge?team=t2', { session: asStaff('judge') });
+    expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeInTheDocument();
   });
 
   it('lets an admin pick a round, defaulting to the latest released one', async () => {
