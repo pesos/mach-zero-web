@@ -101,7 +101,7 @@ export function Home() {
         aria-label="Prizes"
         className="flex w-full flex-col gap-5 rounded-2xl border border-primary/40 bg-gradient-to-br from-card/90 via-card/90 to-primary/25 p-5 backdrop-blur-md sm:p-6 lg:flex-row lg:items-center lg:justify-between"
       >
-        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-5 lg:shrink-0">
           <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-primary/70 bg-primary/10 text-primary min-[360px]:size-14 sm:size-16">
             <TrophyIcon aria-hidden className="size-6 sm:size-8" />
           </span>
@@ -114,7 +114,7 @@ export function Home() {
             </p>
           </div>
         </div>
-        <ul className="grid grid-cols-2 gap-3 lg:flex">
+        <ul className="grid min-w-0 grid-cols-2 gap-3 lg:flex">
           {prizes.extras.map((x) => (
             <li
               key={x.value}
