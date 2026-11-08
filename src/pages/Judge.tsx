@@ -1,7 +1,7 @@
 import type { Schemas } from '@eventkit/sdk';
 import { useCriteria, useEventMutation, useJudgingTeams, useRounds } from '@eventkit/sdk/react';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, LockIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
 import { RoundPicker } from '@/components/RoundPicker';
@@ -43,37 +43,59 @@ function JudgePage() {
     );
   }
   return (
-    <div className="grid gap-4">
-      <RoundPicker rounds={rounds.data} value={roundId} onChange={setRoundId} />
-      <RoundTeams
-        key={roundId}
-        roundId={roundId}
-        closed={rounds.data.find((r) => r.id === roundId)?.phase === 'closed'}
-      />
-    </div>
+    <RoundTeams
+      key={roundId}
+      roundId={roundId}
+      closed={rounds.data.find((r) => r.id === roundId)?.phase === 'closed'}
+      picker={<RoundPicker rounds={rounds.data} value={roundId} onChange={setRoundId} />}
+    />
   );
 }
 
-function RoundTeams({ roundId, closed }: { roundId: string; closed: boolean }) {
+/** The round's teams; the round dropdown sits with the team list so it stays in view. */
+function RoundTeams({
+  roundId,
+  closed,
+  picker,
+}: {
+  roundId: string;
+  closed: boolean;
+  picker: ReactNode;
+}) {
   const criteria = useCriteria(roundId);
   const teams = useJudgingTeams(roundId);
-  if (criteria.isPending || teams.isPending)
-    return <CardsSkeleton label="Loading the teams" count={1} />;
-  if (criteria.isError || teams.isError) return <ErrorText error={criteria.error ?? teams.error} />;
+  const alone = (body: ReactNode) => (
+    <div className="grid gap-4">
+      {picker}
+      {body}
+    </div>
+  );
+  if (criteria.isPending || teams.isPending) {
+    return alone(<CardsSkeleton label="Loading the teams" count={1} />);
+  }
+  if (criteria.isError || teams.isError) {
+    return alone(<ErrorText error={criteria.error ?? teams.error} />);
+  }
   if (criteria.data.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">The organisers have not set the rubric yet.</p>
+    return alone(
+      <p className="text-sm text-muted-foreground">The organisers have not set the rubric yet.</p>,
     );
   }
   if (teams.data.length === 0) {
-    return (
+    return alone(
       <p className="text-sm text-muted-foreground">
         No teams to judge yet: a team appears once a member has checked in.
-      </p>
+      </p>,
     );
   }
   return (
-    <TeamWorkspace teams={teams.data} criteria={criteria.data} roundId={roundId} closed={closed} />
+    <TeamWorkspace
+      teams={teams.data}
+      criteria={criteria.data}
+      roundId={roundId}
+      closed={closed}
+      picker={picker}
+    />
   );
 }
 
@@ -100,11 +122,13 @@ function TeamWorkspace({
   criteria,
   roundId,
   closed,
+  picker,
 }: {
   teams: Schemas['JudgingTeam'][];
   criteria: Schemas['Criterion'][];
   roundId: string;
   closed: boolean;
+  picker: ReactNode;
 }) {
   const who = useWho();
   const [params, setParams] = useSearchParams();
@@ -147,6 +171,7 @@ function TeamWorkspace({
         aria-label="Teams"
         className={cn('grid gap-3 lg:sticky lg:top-20', fromUrl && 'hidden lg:grid')}
       >
+        {picker}
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-medium">Teams</h2>
           <p className="text-xs text-muted-foreground tabular-nums">
