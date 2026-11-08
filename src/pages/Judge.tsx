@@ -166,10 +166,14 @@ function TeamWorkspace({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
-      {/* The team list: on phones only until a team is picked. */}
+      {/* The team list: on phones only until a team is picked. On wide screens it
+          fills the screen height and scrolls on its own, without a scrollbar. */}
       <section
         aria-label="Teams"
-        className={cn('grid gap-3 lg:sticky lg:top-20', fromUrl && 'hidden lg:grid')}
+        className={cn(
+          'grid gap-3 lg:sticky lg:top-20 lg:flex lg:h-[calc(100dvh-6.5rem)] lg:flex-col',
+          fromUrl && 'hidden',
+        )}
       >
         {picker}
         <div className="flex items-baseline justify-between gap-3">
@@ -192,7 +196,7 @@ function TeamWorkspace({
             aria-label="Pick a team"
             value={fromUrl?.id ?? ''}
             onValueChange={go}
-            className="gap-0.5 rounded-xl border bg-card/80 p-1"
+            className="min-h-0 gap-0.5 overflow-y-auto rounded-xl border bg-card/80 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {search.filtered.map((t) => (
               <Label

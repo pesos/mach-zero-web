@@ -184,7 +184,13 @@ export function Layout() {
             <div className="sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto p-3">{menu}</div>
           </aside>
         )}
-        <div className={cn(who.kind && 'px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8 md:px-8')}>
+        <div
+          className={cn(
+            who.kind && 'px-4 pt-6 sm:pt-8 md:px-8',
+            // Room to see the scene below the content; judging fills the screen instead.
+            who.kind && (pathname === '/judge' ? 'pb-8' : 'pb-[min(45svh,24rem)]'),
+          )}
+        >
           <main
             className={cn(
               'mx-auto grid w-full min-w-0 grid-cols-1 content-start gap-6',
