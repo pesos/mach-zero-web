@@ -56,8 +56,7 @@ describe('judging', () => {
     );
     renderPortal('/judge', { session: asStaff('judge') });
     expect(await screen.findByRole('heading', { name: 'Byte Club' })).toBeInTheDocument();
-    expect(screen.getByText('Asha')).toBeInTheDocument();
-    expect(screen.getByText('Ravi')).toBeInTheDocument();
+    expect(screen.getByText('2 members')).toBeInTheDocument();
     expect(screen.getByText('How good is it')).toBeInTheDocument();
     const idea = screen.getByRole('slider', { name: 'Idea' });
     expect(idea).toHaveAttribute('aria-valuenow', '6');
@@ -104,7 +103,7 @@ describe('judging', () => {
     renderPortal('/judge', { session: asStaff('judge') });
     expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Byte Club' })).not.toBeInTheDocument();
-    expect(screen.getByText('1 of 3 fully scored')).toBeInTheDocument();
+    expect(screen.getByText('1 of 3 scored')).toBeInTheDocument();
     expect(screen.getByText('2 / 3')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -134,17 +133,14 @@ describe('judging', () => {
 
     const tiles = screen.getByRole('radiogroup', { name: 'Pick a team' });
     expect(within(tiles).getAllByRole('radio')).toHaveLength(2);
-    expect(screen.getByText('1 of 2 fully scored')).toBeInTheDocument();
-    // Filter by progress, then search.
-    await userEvent.click(screen.getByRole('tab', { name: 'Scored 1' }));
-    expect(within(tiles).getAllByRole('radio')).toHaveLength(1);
-    await userEvent.click(screen.getByRole('tab', { name: 'All 2' }));
+    expect(screen.getByText('1 of 2 scored')).toBeInTheDocument();
+    expect(within(tiles).getByLabelText('Scored')).toBeInTheDocument();
     await userEvent.type(screen.getByRole('searchbox', { name: 'Search teams' }), 'ravi');
     expect(within(tiles).getAllByRole('radio')).toHaveLength(1);
     await userEvent.click(within(tiles).getByRole('radio', { name: /Null Pointers/ }));
     expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeVisible();
     await userEvent.type(screen.getByRole('searchbox', { name: 'Search teams' }), 'zzz');
-    expect(screen.getByText('No team here.')).toBeInTheDocument();
+    expect(screen.getByText('No team matches.')).toBeInTheDocument();
     await userEvent.clear(screen.getByRole('searchbox', { name: 'Search teams' }));
     await userEvent.click(
       within(screen.getByRole('radiogroup', { name: 'Pick a team' })).getByRole('radio', {

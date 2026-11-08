@@ -11,12 +11,10 @@ import { CardsSkeleton } from '@/components/Skeletons';
 import { StaffOnly } from '@/components/StaffOnly';
 import { TeamSubmission } from '@/components/TeamSubmission';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -88,7 +86,6 @@ function progressOf(team: Schemas['JudgingTeam'], criteria: Schemas['Criterion']
   return saved === 0 ? 'todo' : saved === criteria.length ? 'done' : 'partial';
 }
 
-type Filter = 'all' | 'todo' | 'done';
 const teamText = (t: Schemas['JudgingTeam']) => [t.name, ...t.members];
 
 /**
@@ -111,7 +108,6 @@ function TeamWorkspace({
 }) {
   const who = useWho();
   const [params, setParams] = useSearchParams();
-  const [filter, setFilter] = useState<Filter>('all');
   const [tab, setTab] = useState('score');
   const search = useListFilter(teams, teamText);
   const fromUrl = teams.find((t) => t.id === params.get('team'));
@@ -141,10 +137,6 @@ function TeamWorkspace({
       { replace: true },
     );
   const done = teams.filter((t) => progressOf(t, criteria) === 'done').length;
-  const shown = search.filtered.filter((t) => {
-    const p = progressOf(t, criteria);
-    return filter === 'all' || (filter === 'done' ? p === 'done' : p !== 'done');
-  });
   const prev = teams[index - 1];
   const next = teams[index + 1];
 
@@ -155,62 +147,41 @@ function TeamWorkspace({
         aria-label="Teams"
         className={cn('grid gap-3 lg:sticky lg:top-20', fromUrl && 'hidden lg:grid')}
       >
-        <div className="grid gap-2">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-medium">Teams</h2>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {done} of {teams.length} fully scored
-            </p>
-          </div>
-          <Progress value={(done / teams.length) * 100} aria-label="Teams fully scored" />
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-medium">Teams</h2>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {done} of {teams.length} scored
+          </p>
         </div>
         <SearchInput
           label="Search teams"
-          placeholder="Team or member"
+          placeholder="Search teams"
           value={search.query}
           onChange={search.setQuery}
           className="sm:max-w-none"
         />
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-          <TabsList className="w-full">
-            <TabsTrigger value="all" className="flex-1">
-              All {teams.length}
-            </TabsTrigger>
-            <TabsTrigger value="todo" className="flex-1">
-              To score {teams.length - done}
-            </TabsTrigger>
-            <TabsTrigger value="done" className="flex-1">
-              Scored {done}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No team here.</p>
+        {search.filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No team matches.</p>
         ) : (
           <RadioGroup
             aria-label="Pick a team"
             value={fromUrl?.id ?? ''}
             onValueChange={go}
-            className="grid gap-2 sm:grid-cols-2 lg:max-h-[calc(100dvh-20rem)] lg:grid-cols-1 lg:overflow-y-auto lg:pr-1"
+            className="gap-0.5 rounded-xl border bg-card/80 p-1"
           >
-            {shown.map((t) => (
+            {search.filtered.map((t) => (
               <Label
                 key={t.id}
                 htmlFor={`team-${t.id}`}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-xl border bg-card/80 p-3 font-normal transition-colors',
-                  'hover:border-primary/40 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/10',
-                  !fromUrl && t.id === current.id && 'lg:border-primary lg:bg-primary/10',
+                  'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 font-normal transition-colors hover:bg-accent/60',
+                  'has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:font-medium',
+                  !fromUrl && t.id === current.id && 'lg:bg-accent lg:font-medium',
                 )}
               >
                 <RadioGroupItem id={`team-${t.id}`} value={t.id} className="sr-only" />
-                <span className="grid min-w-0 flex-1 gap-0.5">
-                  <span className="font-medium wrap-anywhere">{t.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {t.members.join(', ')}
-                  </span>
-                </span>
-                <ProgressPill progress={progressOf(t, criteria)} />
+                <span className="min-w-0 flex-1 wrap-anywhere">{t.name}</span>
+                <ProgressMark progress={progressOf(t, criteria)} />
               </Label>
             ))}
           </RadioGroup>
@@ -232,14 +203,9 @@ function TeamWorkspace({
         </div>
         <div className="grid gap-2">
           <h2 className="font-display text-2xl leading-tight wrap-anywhere">{current.name}</h2>
-          <div className="flex flex-wrap gap-1.5">
-            {current.members.map((m, i) => (
-              // Two members can share a name.
-              <Badge key={`${i}-${m}`} variant="secondary" className="rounded-full font-normal">
-                {m}
-              </Badge>
-            ))}
-          </div>
+          <p className="text-sm text-muted-foreground">
+            {current.members.length} {current.members.length === 1 ? 'member' : 'members'}
+          </p>
         </div>
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full sm:w-fit">
@@ -314,17 +280,24 @@ function TeamWorkspace({
   );
 }
 
-const PROGRESS: Record<Progress, { label: string; className: string }> = {
-  done: { label: 'Scored', className: 'bg-success/15 text-success' },
-  partial: { label: 'Partly scored', className: 'bg-primary/15 text-primary' },
-  todo: { label: 'Not scored', className: 'bg-muted text-muted-foreground' },
+const PROGRESS: Record<Progress, string> = {
+  done: 'Scored',
+  partial: 'Partly scored',
+  todo: 'Not scored',
 };
 
-function ProgressPill({ progress }: { progress: Progress }) {
-  const { label, className } = PROGRESS[progress];
+function ProgressMark({ progress }: { progress: Progress }) {
+  if (progress === 'done') {
+    return <CheckIcon aria-label={PROGRESS.done} className="size-4 shrink-0 text-success" />;
+  }
   return (
-    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', className)}>
-      {label}
+    <span
+      className={cn(
+        'shrink-0 text-xs',
+        progress === 'partial' ? 'text-primary' : 'text-muted-foreground',
+      )}
+    >
+      {PROGRESS[progress]}
     </span>
   );
 }
