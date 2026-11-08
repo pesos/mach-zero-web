@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-/** A dropdown of rounds; renders nothing when there is nothing to choose. */
+/** A dropdown of rounds, shown even with one so people see which round they are on. */
 export function RoundPicker({
   rounds,
   value,
@@ -18,7 +18,7 @@ export function RoundPicker({
   value: string | undefined;
   onChange: (id: string) => void;
 }) {
-  if (rounds.length < 2) return null;
+  if (rounds.length === 0) return null;
   return (
     <div className="grid w-full gap-2 sm:max-w-xs">
       <Label htmlFor="round">Round</Label>
@@ -30,7 +30,7 @@ export function RoundPicker({
           {rounds.map((r) => (
             <SelectItem key={r.id} value={r.id}>
               {r.name}
-              {r.phase === 'draft' ? ' (draft)' : ''}
+              {r.phase === 'draft' ? ' (draft)' : r.phase === 'closed' ? ' (closed)' : ''}
             </SelectItem>
           ))}
         </SelectContent>
