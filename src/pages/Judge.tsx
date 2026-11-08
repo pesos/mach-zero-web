@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useListFilter } from '@/hooks/useListFilter';
-import { useRoundChoice } from '@/lib/rounds';
+import { firstOpenRound, useRoundChoice } from '@/lib/rounds';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +34,7 @@ export function Judge() {
 /** Judges (and admins) score teams with a checked-in member, round by round. */
 function JudgePage() {
   const rounds = useRounds();
-  const [roundId, setRoundId] = useRoundChoice(rounds.data ?? []);
+  const [roundId, setRoundId] = useRoundChoice(rounds.data ?? [], firstOpenRound);
   if (rounds.isPending) return <CardsSkeleton label="Loading the rounds" count={2} />;
   if (rounds.isError) return <ErrorText error={rounds.error} />;
   if (!roundId) {

@@ -252,15 +252,15 @@ describe('judging', () => {
     expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeInTheDocument();
   });
 
-  it('lets an admin pick a round, defaulting to the latest released one', async () => {
+  it('lets an admin pick a round, defaulting to the first open one', async () => {
     const seen: (string | null)[] = [];
     const session = asStaff('admin');
     server.use(
       http.get(`${E}/rounds`, () =>
         HttpResponse.json([
-          round({ id: 'rd1', name: 'Round 1', phase: 'released' }),
+          round({ id: 'rd1', name: 'Round 1', phase: 'closed' }),
           round({ id: 'rd2', name: 'Round 2', phase: 'released', position: 1 }),
-          round({ id: 'rd3', name: 'Round 3', phase: 'draft', position: 2 }),
+          round({ id: 'rd3', name: 'Round 3', phase: 'released', position: 2 }),
         ]),
       ),
       http.get(`${E}/criteria`, ({ request }) => {
@@ -273,7 +273,7 @@ describe('judging', () => {
     const picker = await screen.findByRole('combobox', { name: 'Round' });
     expect(picker).toHaveTextContent('Round 2');
     await userEvent.click(picker);
-    await userEvent.click(await screen.findByRole('option', { name: 'Round 1' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Round 1 (closed)' }));
     await waitFor(() => expect(seen).toContain('rd1'));
     expect(seen[0]).toBe('rd2');
   });
