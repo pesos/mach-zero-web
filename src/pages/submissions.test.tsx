@@ -262,9 +262,20 @@ describe('submissions for judges and admins', () => {
     );
     renderPortal('/submissions', { session });
     expect(await screen.findByText('Project')).toBeInTheDocument();
-    expect(await screen.findByText('Byte Club')).toBeInTheDocument();
-    expect(screen.getByText('https://git.test/x')).toBeInTheDocument();
     expect(screen.getByText('Round 1 · 1 entry')).toBeInTheDocument();
+    // Collapsed: the team and its links at a glance; open it for the answers.
+    const row = await screen.findByRole('button', { name: /Byte Club/ });
+    expect(row).toHaveTextContent('git.test/x');
+    await userEvent.click(row);
+    const link = await screen.findByRole('link', { name: 'git.test/x' });
+    expect(link).toHaveAttribute('href', 'https://git.test/x');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: 'Judge this team' })).toHaveAttribute(
+      'href',
+      '/judge?team=t1',
+    );
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search Project' }), 'nobody');
+    expect(screen.getByText('No entry matches.')).toBeInTheDocument();
   });
 
   it('shows empty states and errors', async () => {
@@ -274,7 +285,7 @@ describe('submissions for judges and admins', () => {
       http.get(`${E}/submissions/s1/entries`, () => HttpResponse.json([])),
     );
     const first = renderPortal('/submissions', { session });
-    expect(await screen.findByText('No entries yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No team has submitted yet.')).toBeInTheDocument();
     first.unmount();
     server.use(http.get(`${E}/submissions`, () => HttpResponse.json([])));
     const second = renderPortal('/submissions', { session });

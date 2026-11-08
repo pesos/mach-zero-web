@@ -1,5 +1,4 @@
 import {
-  answerText,
   type Draft,
   fieldErrors,
   formatIST,
@@ -11,7 +10,6 @@ import {
 import {
   useMySubmissions,
   usePortalMutation,
-  useSubmissionEntries,
   useSubmissions,
 } from '@eventkit/sdk/react';
 import { CheckIcon, FileTextIcon, InfoIcon, LockIcon } from 'lucide-react';
@@ -32,6 +30,7 @@ import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { Markdown } from '@/components/Markdown';
 import { ConfirmedOnly } from '@/components/ConfirmedOnly';
+import { SubmissionEntries } from './SubmissionEntries';
 
 type Field = Schemas['PortalSubmission']['fields'][number];
 /** The form helpers expect a scope, which submission forms do not have. */
@@ -269,57 +268,13 @@ function StaffSubmissions() {
         items: groupCounts(all, (s) => s.round),
       }}
     >
-      {(view) =>
-        (view.kind === 'group' ? all.filter((s) => s.round.id === view.id) : all).map((s) => (
-          <Card key={s.id}>
-            <CardHeader>
-              <CardTitle className="text-base">{s.title}</CardTitle>
-              <CardDescription>
-                {s.round.name} · {s.entryCount} {s.entryCount === 1 ? 'entry' : 'entries'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Entries id={s.id} fields={s.fields} />
-            </CardContent>
-          </Card>
-        ))
-      }
+      {(view) => (
+        <div className="grid gap-4">
+          {(view.kind === 'group' ? all.filter((s) => s.round.id === view.id) : all).map((s) => (
+            <SubmissionEntries key={s.id} submission={s} />
+          ))}
+        </div>
+      )}
     </FeedTabs>
-  );
-}
-
-function Entries({ id, fields }: { id: string; fields: Pick<Field, 'id' | 'label' | 'type'>[] }) {
-  const entries = useSubmissionEntries(id);
-  if (entries.isPending) return <p className="text-sm text-muted-foreground">Loading entries…</p>;
-  if (entries.isError) return <ErrorText error={entries.error} />;
-  if (entries.data.length === 0) {
-    return <p className="text-sm text-muted-foreground">No entries yet.</p>;
-  }
-  return (
-    <ul className="grid divide-y">
-      {entries.data.map((e) => (
-        <li key={e.id} className="grid gap-1 py-3 text-sm first:pt-0 last:pb-0">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">{e.team.name}</span>
-            <span className="text-xs text-muted-foreground">{formatIST(e.updatedAt)}</span>
-            {e.late && <Badge variant="destructive">Late</Badge>}
-          </span>
-          <dl className="grid gap-1">
-            {fields.map((f) => (
-              <div key={f.id} className="grid gap-0.5 sm:grid-cols-[12rem_1fr]">
-                <dt className="text-muted-foreground">{f.label}</dt>
-                <dd className="break-words whitespace-pre-wrap">
-                  {e.answers[f.id] === undefined
-                    ? '–'
-                    : f.type === 'datetime'
-                      ? formatIST(String(e.answers[f.id]))
-                      : answerText(e.answers[f.id])}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </li>
-      ))}
-    </ul>
   );
 }
