@@ -181,7 +181,9 @@ export function Layout() {
         {/* Signed in: the sections in a full-height sidebar from md up (a sheet on phones). */}
         {who.kind && (
           <aside className="hidden border-r border-border/70 bg-card/60 backdrop-blur-md md:block">
-            <div className="sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto p-3">{menu}</div>
+            <div className="sticky top-[calc(3.5rem+1px)] h-[calc(100dvh-3.5rem-1px)] overflow-y-auto p-3">
+              {menu}
+            </div>
           </aside>
         )}
         <div

@@ -192,11 +192,13 @@ function TeamWorkspace({
         {search.filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">No team matches.</p>
         ) : (
+          // `relative` keeps the hidden (absolutely placed) radios inside the scroller,
+          // or the off-screen ones stretch the page.
           <RadioGroup
             aria-label="Pick a team"
             value={fromUrl?.id ?? ''}
             onValueChange={go}
-            className="min-h-0 gap-0.5 overflow-y-auto rounded-xl border bg-card p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="relative min-h-0 gap-0.5 overflow-y-auto rounded-xl border bg-card p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {search.filtered.map((t) => (
               <Label
