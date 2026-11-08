@@ -1,16 +1,15 @@
 import type { Schemas } from '@eventkit/sdk';
 import { useCriteria, useEventMutation, useJudgingTeams, useRounds } from '@eventkit/sdk/react';
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, LockIcon } from 'lucide-react';
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
 import { RoundPicker } from '@/components/RoundPicker';
-import { ScoreBreakdownView } from '@/components/ScoreBreakdown';
+import { TeamReviews } from '@/components/ScoreBreakdown';
 import { SearchInput } from '@/components/SearchInput';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { StaffOnly } from '@/components/StaffOnly';
 import { TeamSubmission } from '@/components/TeamSubmission';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -46,7 +45,7 @@ function JudgePage() {
     <RoundTeams
       key={roundId}
       roundId={roundId}
-      closed={rounds.data.find((r) => r.id === roundId)?.phase === 'closed'}
+      rounds={rounds.data}
       picker={<RoundPicker rounds={rounds.data} value={roundId} onChange={setRoundId} />}
     />
   );
@@ -55,11 +54,11 @@ function JudgePage() {
 /** The round's teams; the round dropdown sits with the team list so it stays in view. */
 function RoundTeams({
   roundId,
-  closed,
+  rounds,
   picker,
 }: {
   roundId: string;
-  closed: boolean;
+  rounds: Schemas['Round'][];
   picker: ReactNode;
 }) {
   const criteria = useCriteria(roundId);
@@ -93,7 +92,7 @@ function RoundTeams({
       teams={teams.data}
       criteria={criteria.data}
       roundId={roundId}
-      closed={closed}
+      rounds={rounds}
       picker={picker}
     />
   );
@@ -111,23 +110,23 @@ function progressOf(team: Schemas['JudgingTeam'], criteria: Schemas['Criterion']
 const teamText = (t: Schemas['JudgingTeam']) => [t.name, ...t.members];
 
 /**
- * Teams as tiles (searchable, filtered by how far you got) beside the chosen
- * team: score it, read its submission, and once the round is closed read every
- * judge's review. On phones the list and the team take turns. The team is in
- * the URL, so a reload stays on it; score cards a judge opened stay mounted
- * (hidden), so unsaved scores survive switching away.
+ * The team list (searchable) beside the chosen team: score it, read its
+ * submission, and read every judge's review of this round and the rounds
+ * before it (each once it is closed). On phones the list and the team take
+ * turns. The team is in the URL, so a reload stays on it; score cards a judge
+ * opened stay mounted (hidden), so unsaved scores survive switching away.
  */
 function TeamWorkspace({
   teams,
   criteria,
   roundId,
-  closed,
+  rounds,
   picker,
 }: {
   teams: Schemas['JudgingTeam'][];
   criteria: Schemas['Criterion'][];
   roundId: string;
-  closed: boolean;
+  rounds: Schemas['Round'][];
   picker: ReactNode;
 }) {
   const who = useWho();
@@ -140,7 +139,6 @@ function TeamWorkspace({
   const index = teams.indexOf(current);
   const [opened, setOpened] = useState(() => new Set([current.id]));
   if (!opened.has(current.id)) setOpened(new Set(opened).add(current.id));
-  const canReview = who.role === 'admin' || closed;
 
   const go = (id: string) => {
     setParams(
@@ -269,18 +267,13 @@ function TeamWorkspace({
             <TeamSubmission key={current.id} teamId={current.id} roundId={roundId} />
           </TabsContent>
           <TabsContent value="reviews">
-            {canReview ? (
-              <ScoreBreakdownView key={current.id} teamId={current.id} roundId={roundId} />
-            ) : (
-              <Alert>
-                <LockIcon />
-                <AlertTitle>Reviews open when the round closes</AlertTitle>
-                <AlertDescription>
-                  Every judge’s marks and remarks show here once the organisers close this round, so
-                  scoring stays independent.
-                </AlertDescription>
-              </Alert>
-            )}
+            <TeamReviews
+              key={current.id}
+              teamId={current.id}
+              rounds={rounds}
+              roundId={roundId}
+              isAdmin={who.role === 'admin'}
+            />
           </TabsContent>
         </Tabs>
         <nav aria-label="Teams" className="flex items-center justify-between gap-3">

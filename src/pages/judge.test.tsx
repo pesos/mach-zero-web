@@ -243,6 +243,50 @@ describe('judging', () => {
     expect(screen.getByText('Lovely demo')).toBeInTheDocument();
   });
 
+  it('shows the reviews of earlier rounds under the current one', async () => {
+    judging([{ id: 't1', name: 'Byte Club', members: ['Asha'], myScores: [] }]);
+    const asked: (string | null)[] = [];
+    const session = asStaff('judge');
+    server.use(
+      http.get(`${E}/rounds`, () =>
+        HttpResponse.json([
+          round({ id: 'rd1', name: 'Round 1', phase: 'closed' }),
+          round({ id: 'rd2', name: 'Round 2', phase: 'released', position: 1 }),
+          round({ id: 'rd3', name: 'Round 3', phase: 'draft', position: 2 }),
+        ]),
+      ),
+      http.get(`${E}/judging/teams/t1/breakdown`, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.get('roundId'));
+        return HttpResponse.json({
+          round: { id: 'rd1', name: 'Round 1', phase: 'closed' },
+          team: { id: 't1', name: 'Byte Club' },
+          inRound: true,
+          total: 9,
+          maxTotal: 10,
+          criteria: [{ id: 'c1', name: 'Idea', maxScore: 10, average: 9 }],
+          judges: [
+            {
+              judge: { id: 'j2', name: 'Meera' },
+              total: 9,
+              updatedAt: '2026-10-31T06:00:00.000Z',
+              scores: [{ criterionId: 'c1', value: 9, comment: 'Round one remark' }],
+            },
+          ],
+        });
+      }),
+    );
+    renderPortal('/judge', { session });
+    await userEvent.click(await screen.findByRole('tab', { name: 'Reviews' }));
+    // Round 2 (this round, still open) is locked; Round 1 below it is readable.
+    expect(await screen.findByRole('button', { name: /Round 2/ })).toBeInTheDocument();
+    expect(screen.getByText('Reviews open when the round closes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Round 1/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Round 3/ })).not.toBeInTheDocument();
+    expect(await screen.findByText('Round one remark')).toBeInTheDocument();
+    expect(screen.getByText('Final score')).toBeInTheDocument();
+    expect(asked).toEqual(['rd1']);
+  });
+
   it('opens the team named in the link', async () => {
     judging([
       { id: 't1', name: 'Byte Club', members: ['Asha'], myScores: [] },
