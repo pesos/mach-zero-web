@@ -18,3 +18,12 @@ export function useRoundChoice(rounds: RoundOption[], fallback = defaultRound) {
   const roundId = rounds.some((r) => r.id === picked) ? picked : fallback(rounds);
   return [roundId, setPicked] as const;
 }
+
+/** The chosen round and every round before it (by position), newest first. */
+export function roundsUpTo<R extends RoundOption & { position: number }>(
+  rounds: R[],
+  roundId: string,
+): R[] {
+  const ordered = [...rounds].sort((a, b) => a.position - b.position);
+  return ordered.slice(0, ordered.findIndex((r) => r.id === roundId) + 1).reverse();
+}

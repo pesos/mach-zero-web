@@ -2,22 +2,40 @@ import { formatIST, type Schemas } from '@eventkit/sdk';
 import { useSubmissionEntries, useSubmissions } from '@eventkit/sdk/react';
 import { FileTextIcon } from 'lucide-react';
 import { ErrorText } from '@/components/ErrorText';
+import { RoundSections } from '@/components/RoundSections';
 import { ListSkeleton } from '@/components/Skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnswerValue } from '@/pages/SubmissionEntries';
 
 type Submission = Schemas['Submission'];
+type Round = Schemas['Round'];
 
-/** What one team handed in for each form of a round. */
-export function TeamSubmission({ teamId, roundId }: { teamId: string; roundId: string }) {
-  const forms = useSubmissions(roundId);
+/**
+ * What one team handed in for the chosen round and every round before it,
+ * newest first: on Round 3, Round 2's and Round 1's forms show below it.
+ */
+export function TeamSubmission({
+  teamId,
+  rounds,
+  roundId,
+}: {
+  teamId: string;
+  rounds: Round[];
+  roundId: string;
+}) {
+  const forms = useSubmissions();
   if (forms.isPending) return <ListSkeleton label="Loading the submission" rows={3} />;
   if (forms.isError) return <ErrorText error={forms.error} />;
-  const mine = forms.data
-    .filter((s) => s.round.id === roundId)
-    .sort((a, b) => a.position - b.position);
-  if (mine.length === 0) {
+  return (
+    <RoundSections rounds={rounds} roundId={roundId}>
+      {(r) => <RoundForms teamId={teamId} forms={forms.data.filter((s) => s.round.id === r.id)} />}
+    </RoundSections>
+  );
+}
+
+function RoundForms({ teamId, forms }: { teamId: string; forms: Submission[] }) {
+  if (forms.length === 0) {
     return (
       <div className="grid justify-items-center gap-2 rounded-xl border border-dashed bg-card/70 p-8 text-center">
         <FileTextIcon className="size-6 text-muted-foreground" aria-hidden />
@@ -27,9 +45,11 @@ export function TeamSubmission({ teamId, roundId }: { teamId: string; roundId: s
   }
   return (
     <div className="grid gap-4">
-      {mine.map((s) => (
-        <FormEntry key={s.id} submission={s} teamId={teamId} />
-      ))}
+      {[...forms]
+        .sort((a, b) => a.position - b.position)
+        .map((s) => (
+          <FormEntry key={s.id} submission={s} teamId={teamId} />
+        ))}
     </div>
   );
 }

@@ -264,7 +264,12 @@ function TeamWorkspace({
               ))}
           </TabsContent>
           <TabsContent value="submission">
-            <TeamSubmission key={current.id} teamId={current.id} roundId={roundId} />
+            <TeamSubmission
+              key={current.id}
+              teamId={current.id}
+              rounds={rounds}
+              roundId={roundId}
+            />
           </TabsContent>
           <TabsContent value="reviews">
             <TeamReviews

@@ -197,11 +197,29 @@ describe('judging', () => {
         ]),
       ),
     );
-    renderPortal('/judge', { session: asStaff('judge') });
+    const first = renderPortal('/judge', { session: asStaff('judge') });
     await userEvent.click(await screen.findByRole('tab', { name: 'Submission' }));
     const link = await screen.findByRole('link', { name: 'git.test/byte' });
     expect(link).toHaveAttribute('href', 'https://git.test/byte');
     expect(screen.getByText(/Saved by Asha/)).toBeInTheDocument();
+    first.unmount();
+
+    // On Round 2, Round 1's submission still shows below it.
+    const session = asStaff('judge');
+    server.use(
+      http.get(`${E}/rounds`, () =>
+        HttpResponse.json([
+          round({ id: 'rd1', name: 'Round 1', phase: 'closed' }),
+          round({ id: 'rd2', name: 'Round 2', phase: 'released', position: 1 }),
+        ]),
+      ),
+    );
+    renderPortal('/judge', { session });
+    await userEvent.click(await screen.findByRole('tab', { name: 'Submission' }));
+    expect(await screen.findByRole('button', { name: /Round 2/ })).toBeInTheDocument();
+    expect(screen.getByText('This round has no submission forms.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Round 1/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'git.test/byte' })).toBeInTheDocument();
   });
 
   it('opens every judge’s review once the round is closed, not before', async () => {
