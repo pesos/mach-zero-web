@@ -7,11 +7,7 @@ import {
   toAnswers,
   toDraft,
 } from '@eventkit/sdk';
-import {
-  useMySubmissions,
-  usePortalMutation,
-  useSubmissions,
-} from '@eventkit/sdk/react';
+import { useMySubmissions, usePortalMutation, useSubmissions } from '@eventkit/sdk/react';
 import { CheckIcon, FileTextIcon, InfoIcon, LockIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
