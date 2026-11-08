@@ -167,11 +167,13 @@ function TeamWorkspace({
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
       {/* The team list: on phones only until a team is picked. On wide screens it
-          fills the screen height and scrolls on its own, without a scrollbar. */}
+          fills the screen height and scrolls on its own, without a scrollbar. It
+          sticks exactly where it starts (header 3.5rem + border, then the page's
+          2rem top padding), so scrolling the page doesn't nudge it. */}
       <section
         aria-label="Teams"
         className={cn(
-          'grid gap-3 lg:sticky lg:top-20 lg:flex lg:h-[calc(100dvh-6.5rem)] lg:flex-col',
+          'grid gap-3 lg:sticky lg:top-[calc(5.5rem+1px)] lg:flex lg:h-[calc(100dvh-7.5rem-1px)] lg:flex-col',
           fromUrl && 'hidden',
         )}
       >
