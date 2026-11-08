@@ -1,34 +1,28 @@
 import type { Schemas } from '@eventkit/sdk';
 import { useCriteria, useEventMutation, useJudgingTeams, useRounds } from '@eventkit/sdk/react';
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  SearchIcon,
-} from 'lucide-react';
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, LockIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
 import { RoundPicker } from '@/components/RoundPicker';
-import { useRoundChoice } from '@/lib/rounds';
+import { ScoreBreakdownView } from '@/components/ScoreBreakdown';
+import { SearchInput } from '@/components/SearchInput';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { StaffOnly } from '@/components/StaffOnly';
+import { TeamSubmission } from '@/components/TeamSubmission';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useListFilter } from '@/hooks/useListFilter';
+import { useRoundChoice } from '@/lib/rounds';
+import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 
 export function Judge() {
@@ -53,12 +47,16 @@ function JudgePage() {
   return (
     <div className="grid gap-4">
       <RoundPicker rounds={rounds.data} value={roundId} onChange={setRoundId} />
-      <RoundTeams key={roundId} roundId={roundId} />
+      <RoundTeams
+        key={roundId}
+        roundId={roundId}
+        closed={rounds.data.find((r) => r.id === roundId)?.phase === 'closed'}
+      />
     </div>
   );
 }
 
-function RoundTeams({ roundId }: { roundId: string }) {
+function RoundTeams({ roundId, closed }: { roundId: string; closed: boolean }) {
   const criteria = useCriteria(roundId);
   const teams = useJudgingTeams(roundId);
   if (criteria.isPending || teams.isPending)
@@ -76,7 +74,9 @@ function RoundTeams({ roundId }: { roundId: string }) {
       </p>
     );
   }
-  return <OneTeamAtATime teams={teams.data} criteria={criteria.data} roundId={roundId} />;
+  return (
+    <TeamWorkspace teams={teams.data} criteria={criteria.data} roundId={roundId} closed={closed} />
+  );
 }
 
 type Progress = 'done' | 'partial' | 'todo';
@@ -88,27 +88,39 @@ function progressOf(team: Schemas['JudgingTeam'], criteria: Schemas['Criterion']
   return saved === 0 ? 'todo' : saved === criteria.length ? 'done' : 'partial';
 }
 
+type Filter = 'all' | 'todo' | 'done';
+const teamText = (t: Schemas['JudgingTeam']) => [t.name, ...t.members];
+
 /**
- * One team on screen, picked from a searchable list or stepped through with
- * Previous / Next. The team is in the URL, so a reload stays on it. Cards a judge
- * has opened stay mounted (hidden), so unsaved scores survive switching away.
+ * Teams as tiles (searchable, filtered by how far you got) beside the chosen
+ * team: score it, read its submission, and once the round is closed read every
+ * judge's review. On phones the list and the team take turns. The team is in
+ * the URL, so a reload stays on it; score cards a judge opened stay mounted
+ * (hidden), so unsaved scores survive switching away.
  */
-function OneTeamAtATime({
+function TeamWorkspace({
   teams,
   criteria,
   roundId,
+  closed,
 }: {
   teams: Schemas['JudgingTeam'][];
   criteria: Schemas['Criterion'][];
   roundId: string;
+  closed: boolean;
 }) {
+  const who = useWho();
   const [params, setParams] = useSearchParams();
+  const [filter, setFilter] = useState<Filter>('all');
+  const [tab, setTab] = useState('score');
+  const search = useListFilter(teams, teamText);
   const fromUrl = teams.find((t) => t.id === params.get('team'));
   const firstOpen = teams.find((t) => progressOf(t, criteria) !== 'done') ?? teams[0]!;
   const current = fromUrl ?? firstOpen;
   const index = teams.indexOf(current);
   const [opened, setOpened] = useState(() => new Set([current.id]));
   if (!opened.has(current.id)) setOpened(new Set(opened).add(current.id));
+  const canReview = who.role === 'admin' || closed;
 
   const go = (id: string) => {
     setParams(
@@ -120,60 +132,184 @@ function OneTeamAtATime({
     );
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  const back = () =>
+    setParams(
+      (p) => {
+        p.delete('team');
+        return p;
+      },
+      { replace: true },
+    );
   const done = teams.filter((t) => progressOf(t, criteria) === 'done').length;
+  const shown = search.filtered.filter((t) => {
+    const p = progressOf(t, criteria);
+    return filter === 'all' || (filter === 'done' ? p === 'done' : p !== 'done');
+  });
   const prev = teams[index - 1];
   const next = teams[index + 1];
 
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <Label htmlFor="team-search">Team</Label>
-          <p className="text-xs text-muted-foreground tabular-nums">
-            {done} of {teams.length} fully scored
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
+      {/* The team list: on phones only until a team is picked. */}
+      <section
+        aria-label="Teams"
+        className={cn('grid gap-3 lg:sticky lg:top-20', fromUrl && 'hidden lg:grid')}
+      >
+        <div className="grid gap-2">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-medium">Teams</h2>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {done} of {teams.length} fully scored
+            </p>
+          </div>
+          <Progress value={(done / teams.length) * 100} aria-label="Teams fully scored" />
+        </div>
+        <SearchInput
+          label="Search teams"
+          placeholder="Team or member"
+          value={search.query}
+          onChange={search.setQuery}
+          className="sm:max-w-none"
+        />
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+          <TabsList className="w-full">
+            <TabsTrigger value="all" className="flex-1">
+              All {teams.length}
+            </TabsTrigger>
+            <TabsTrigger value="todo" className="flex-1">
+              To score {teams.length - done}
+            </TabsTrigger>
+            <TabsTrigger value="done" className="flex-1">
+              Scored {done}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {shown.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No team here.</p>
+        ) : (
+          <RadioGroup
+            aria-label="Pick a team"
+            value={fromUrl?.id ?? ''}
+            onValueChange={go}
+            className="grid gap-2 sm:grid-cols-2 lg:max-h-[calc(100dvh-20rem)] lg:grid-cols-1 lg:overflow-y-auto lg:pr-1"
+          >
+            {shown.map((t) => (
+              <Label
+                key={t.id}
+                htmlFor={`team-${t.id}`}
+                className={cn(
+                  'flex cursor-pointer items-start gap-3 rounded-xl border bg-card/80 p-3 font-normal transition-colors',
+                  'hover:border-primary/40 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/10',
+                  !fromUrl && t.id === current.id && 'lg:border-primary lg:bg-primary/10',
+                )}
+              >
+                <RadioGroupItem id={`team-${t.id}`} value={t.id} className="sr-only" />
+                <span className="grid min-w-0 flex-1 gap-0.5">
+                  <span className="font-medium wrap-anywhere">{t.name}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {t.members.join(', ')}
+                  </span>
+                </span>
+                <ProgressPill progress={progressOf(t, criteria)} />
+              </Label>
+            ))}
+          </RadioGroup>
+        )}
+      </section>
+
+      {/* The chosen team: on phones only once picked; on wide screens always. */}
+      <section
+        aria-label={current.name}
+        className={cn('grid min-w-0 gap-4', !fromUrl && 'hidden lg:grid')}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Button variant="ghost" size="sm" className="-ml-2 lg:hidden" onClick={back}>
+            <ChevronLeftIcon aria-hidden /> All teams
+          </Button>
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+            Team {index + 1} of {teams.length}
           </p>
         </div>
-        <TeamPicker teams={teams} criteria={criteria} value={current.id} onChange={go} />
-        <Progress value={(done / teams.length) * 100} aria-label="Teams fully scored" />
-      </div>
-
-      {teams
-        .filter((t) => opened.has(t.id))
-        .map((t) => (
-          <div key={t.id} hidden={t.id !== current.id}>
-            <ScoreCard
-              team={t}
-              criteria={criteria}
-              roundId={roundId}
-              position={`${teams.indexOf(t) + 1} of ${teams.length}`}
-              onNext={next && t.id === current.id ? () => go(next.id) : undefined}
-            />
+        <div className="grid gap-2">
+          <h2 className="font-display text-2xl leading-tight wrap-anywhere">{current.name}</h2>
+          <div className="flex flex-wrap gap-1.5">
+            {current.members.map((m, i) => (
+              // Two members can share a name.
+              <Badge key={`${i}-${m}`} variant="secondary" className="rounded-full font-normal">
+                {m}
+              </Badge>
+            ))}
           </div>
-        ))}
-
-      <nav aria-label="Teams" className="flex items-center justify-between gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={!prev}
-          onClick={() => prev && go(prev.id)}
-        >
-          <ChevronLeftIcon aria-hidden />
-          Previous
-        </Button>
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {index + 1} / {teams.length}
-        </span>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={!next}
-          onClick={() => next && go(next.id)}
-        >
-          Next
-          <ChevronRightIcon aria-hidden />
-        </Button>
-      </nav>
+        </div>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="w-full sm:w-fit">
+            <TabsTrigger value="score" className="flex-1 sm:flex-none">
+              Score
+            </TabsTrigger>
+            <TabsTrigger value="submission" className="flex-1 sm:flex-none">
+              Submission
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="flex-1 sm:flex-none">
+              Reviews
+            </TabsTrigger>
+          </TabsList>
+          {/* Kept mounted (hidden) so unsaved scores survive switching tabs. */}
+          <TabsContent value="score" forceMount className="data-[state=inactive]:hidden">
+            {teams
+              .filter((t) => opened.has(t.id))
+              .map((t) => (
+                <div key={t.id} hidden={t.id !== current.id}>
+                  <ScoreCard
+                    team={t}
+                    criteria={criteria}
+                    roundId={roundId}
+                    onNext={next && t.id === current.id ? () => go(next.id) : undefined}
+                  />
+                </div>
+              ))}
+          </TabsContent>
+          <TabsContent value="submission">
+            <TeamSubmission key={current.id} teamId={current.id} roundId={roundId} />
+          </TabsContent>
+          <TabsContent value="reviews">
+            {canReview ? (
+              <ScoreBreakdownView key={current.id} teamId={current.id} roundId={roundId} />
+            ) : (
+              <Alert>
+                <LockIcon />
+                <AlertTitle>Reviews open when the round closes</AlertTitle>
+                <AlertDescription>
+                  Every judge’s marks and remarks show here once the organisers close this round, so
+                  scoring stays independent.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+        </Tabs>
+        <nav aria-label="Teams" className="flex items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!prev}
+            onClick={() => prev && go(prev.id)}
+          >
+            <ChevronLeftIcon aria-hidden />
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {index + 1} / {teams.length}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!next}
+            onClick={() => next && go(next.id)}
+          >
+            Next
+            <ChevronRightIcon aria-hidden />
+          </Button>
+        </nav>
+      </section>
     </div>
   );
 }
@@ -193,95 +329,15 @@ function ProgressPill({ progress }: { progress: Progress }) {
   );
 }
 
-/**
- * The current team as a button; it opens a searchable list (by team or member
- * name). A tap outside, Escape or picking a team closes it.
- */
-function TeamPicker({
-  teams,
-  criteria,
-  value,
-  onChange,
-}: {
-  teams: Schemas['JudgingTeam'][];
-  criteria: Schemas['Criterion'][];
-  value: string;
-  onChange: (id: string) => void;
-}) {
-  const current = teams.find((t) => t.id === value)!;
-  const [open, setOpen] = useState(false);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          id="team-search"
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="h-11 w-full min-w-0 justify-between gap-2 px-3 text-base font-normal"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <SearchIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-            <span className="truncate">{current.name}</span>
-          </span>
-          <ChevronDownIcon
-            aria-hidden
-            className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')}
-          />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-(--radix-popover-trigger-width) max-w-[calc(100vw-2rem)] p-0"
-      >
-        <Command loop>
-          <CommandInput placeholder="Search a team or member" aria-label="Search teams" />
-          <CommandList className="max-h-[min(18rem,50dvh)]">
-            <CommandEmpty>No team matches.</CommandEmpty>
-            {teams.map((t) => (
-              <CommandItem
-                key={t.id}
-                value={t.id}
-                keywords={[t.name, ...t.members]}
-                onSelect={() => {
-                  onChange(t.id);
-                  setOpen(false);
-                }}
-                className="justify-between gap-3 rounded-lg px-3 py-2"
-              >
-                <span className="grid min-w-0">
-                  <span className="flex items-center gap-1.5 font-medium wrap-anywhere">
-                    {t.id === value && (
-                      <CheckIcon className="size-3.5 shrink-0 text-primary" aria-hidden />
-                    )}
-                    {t.name}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {t.members.join(', ')}
-                  </span>
-                </span>
-                <ProgressPill progress={progressOf(t, criteria)} />
-              </CommandItem>
-            ))}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 function ScoreCard({
   team,
   criteria,
   roundId,
-  position,
   onNext,
 }: {
   roundId: string;
   team: Schemas['JudgingTeam'];
   criteria: Schemas['Criterion'][];
-  position: string;
   onNext?: () => void;
 }) {
   const mine = new Map(team.myScores.map((s) => [s.criterionId, s]));
@@ -319,20 +375,11 @@ function ScoreCard({
         aria-hidden
         className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-lavender/40"
       />
-      <CardHeader className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-        <div className="grid min-w-0 gap-2">
-          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-            Team {position}
-          </p>
-          <CardTitle className="font-display text-2xl leading-tight break-words">
-            {team.name}
-          </CardTitle>
-          <CardDescription className="flex flex-wrap gap-1.5">
-            {team.members.map((m) => (
-              <Badge key={m} variant="secondary" className="rounded-full font-normal">
-                {m}
-              </Badge>
-            ))}
+      <CardHeader className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="grid min-w-0 gap-1">
+          <CardTitle className="text-base">Your scores</CardTitle>
+          <CardDescription>
+            {scored.length} of {criteria.length} criteria scored
           </CardDescription>
         </div>
         <p

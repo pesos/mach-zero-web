@@ -180,7 +180,7 @@ function EntryRow({ entry: e, fields }: { entry: Entry; fields: Field[] }) {
 }
 
 /** One answer, shown by its kind: links open, choices as tags, long text as paragraphs. */
-function AnswerValue({ field, value }: { field: Field; value: Value | undefined }) {
+export function AnswerValue({ field, value }: { field: Field; value: Value | undefined }) {
   if (value === undefined || value === '') {
     return <span className="text-muted-foreground">Not answered</span>;
   }

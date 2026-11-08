@@ -185,7 +185,13 @@ export function Layout() {
           </aside>
         )}
         <div className={cn(who.kind && 'px-4 pt-6 pb-[min(45svh,24rem)] sm:pt-8 md:px-8')}>
-          <main className="mx-auto grid w-full max-w-3xl min-w-0 grid-cols-1 content-start gap-6">
+          <main
+            className={cn(
+              'mx-auto grid w-full min-w-0 grid-cols-1 content-start gap-6',
+              // Judging puts the team list beside the team, so it gets more room.
+              pathname === '/judge' ? 'max-w-6xl' : 'max-w-3xl',
+            )}
+          >
             <Outlet />
             {/* New pages open at the top; Back returns to where you were. */}
             <ScrollRestoration />

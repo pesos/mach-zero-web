@@ -1,5 +1,5 @@
 import type { Schemas } from '@eventkit/sdk';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -114,40 +114,137 @@ describe('judging', () => {
     expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeVisible();
   });
 
-  it('finds a team by team or member name, and keeps unsaved scores when switching', async () => {
+  it('picks a team from searchable tiles, and keeps unsaved scores when switching', async () => {
     judging([
       { id: 't1', name: 'Byte Club', members: ['Asha'], myScores: [] },
-      { id: 't2', name: 'Null Pointers', members: ['Ravi'], myScores: [] },
+      {
+        id: 't2',
+        name: 'Null Pointers',
+        members: ['Ravi'],
+        myScores: [
+          { criterionId: 'c1', value: 3, comment: null } as Schemas['Score'],
+          { criterionId: 'c2', value: 2, comment: null } as Schemas['Score'],
+        ],
+      },
     ]);
     renderPortal('/judge', { session: asStaff('judge') });
     const idea = await screen.findByRole('slider', { name: 'Idea' });
     idea.focus();
     await userEvent.keyboard('{ArrowRight}{ArrowRight}');
 
-    const picker = screen.getByRole('combobox', { name: 'Team' });
-    expect(picker).toHaveTextContent('Byte Club');
-    await userEvent.click(picker);
-    expect(screen.getAllByRole('option')).toHaveLength(2);
-    const search = screen.getByPlaceholderText('Search a team or member');
-    await userEvent.type(search, 'ravi');
-    expect(screen.getAllByRole('option')).toHaveLength(1);
-    expect(screen.getByRole('option', { name: /Null Pointers/ })).toHaveTextContent('Not scored');
-    await userEvent.keyboard('{Enter}');
+    const tiles = screen.getByRole('radiogroup', { name: 'Pick a team' });
+    expect(within(tiles).getAllByRole('radio')).toHaveLength(2);
+    expect(screen.getByText('1 of 2 fully scored')).toBeInTheDocument();
+    // Filter by progress, then search.
+    await userEvent.click(screen.getByRole('tab', { name: 'Scored 1' }));
+    expect(within(tiles).getAllByRole('radio')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('tab', { name: 'All 2' }));
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search teams' }), 'ravi');
+    expect(within(tiles).getAllByRole('radio')).toHaveLength(1);
+    await userEvent.click(within(tiles).getByRole('radio', { name: /Null Pointers/ }));
     expect(await screen.findByRole('heading', { name: 'Null Pointers' })).toBeVisible();
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('combobox', { name: 'Team' }));
-    await userEvent.type(screen.getByPlaceholderText('Search a team or member'), 'zzz');
-    expect(screen.getByText(/No team matches/)).toBeInTheDocument();
-    await userEvent.clear(screen.getByPlaceholderText('Search a team or member'));
-    await userEvent.click(screen.getByRole('option', { name: /Byte Club/ }));
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search teams' }), 'zzz');
+    expect(screen.getByText('No team here.')).toBeInTheDocument();
+    await userEvent.clear(screen.getByRole('searchbox', { name: 'Search teams' }));
+    await userEvent.click(
+      within(screen.getByRole('radiogroup', { name: 'Pick a team' })).getByRole('radio', {
+        name: /Byte Club/,
+      }),
+    );
     expect(await screen.findByRole('heading', { name: 'Byte Club' })).toBeVisible();
-    // A tap outside closes the list.
-    await userEvent.click(screen.getByRole('combobox', { name: 'Team' }));
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
-    await userEvent.click(document.body);
-    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
     expect(screen.getByRole('slider', { name: 'Idea' })).toHaveAttribute('aria-valuenow', '2');
+  });
+
+  it('shows the team’s submission for the round', async () => {
+    judging([{ id: 't1', name: 'Byte Club', members: ['Asha'], myScores: [] }]);
+    server.use(
+      http.get(`${E}/submissions`, () =>
+        HttpResponse.json([
+          {
+            id: 's1',
+            round: { id: 'rd1', name: 'Round 1', phase: 'released' },
+            title: 'Project',
+            description: '',
+            position: 0,
+            deadline: null,
+            fields: [
+              {
+                id: 'f1',
+                label: 'Repo',
+                help: null,
+                type: 'short_text',
+                options: [],
+                required: true,
+                unique: false,
+                pattern: null,
+                position: 0,
+              },
+            ],
+            entryCount: 1,
+            createdAt: '2026-10-31T06:00:00.000Z',
+            updatedAt: '2026-10-31T06:00:00.000Z',
+          },
+        ]),
+      ),
+      http.get(`${E}/submissions/s1/entries`, () =>
+        HttpResponse.json([
+          {
+            id: 'e1',
+            submissionId: 's1',
+            team: { id: 't1', name: 'Byte Club' },
+            answers: { f1: 'https://git.test/byte' },
+            submittedBy: { registrationId: 'r1', name: 'Asha' },
+            late: false,
+            createdAt: '2026-10-31T06:00:00.000Z',
+            updatedAt: '2026-10-31T06:00:00.000Z',
+          },
+        ]),
+      ),
+    );
+    renderPortal('/judge', { session: asStaff('judge') });
+    await userEvent.click(await screen.findByRole('tab', { name: 'Submission' }));
+    const link = await screen.findByRole('link', { name: 'git.test/byte' });
+    expect(link).toHaveAttribute('href', 'https://git.test/byte');
+    expect(screen.getByText(/Saved by Asha/)).toBeInTheDocument();
+  });
+
+  it('opens every judge’s review once the round is closed, not before', async () => {
+    judging([{ id: 't1', name: 'Byte Club', members: ['Asha'], myScores: [] }]);
+    server.use(
+      http.get(`${E}/judging/teams/t1/breakdown`, () =>
+        HttpResponse.json({
+          round: { id: 'rd1', name: 'Round 1', phase: 'closed' },
+          team: { id: 't1', name: 'Byte Club' },
+          inRound: true,
+          total: 9,
+          maxTotal: 15,
+          criteria: [{ id: 'c1', name: 'Idea', maxScore: 10, average: 9 }],
+          judges: [
+            {
+              judge: { id: 'j2', name: 'Meera' },
+              total: 9,
+              updatedAt: '2026-10-31T06:00:00.000Z',
+              scores: [{ criterionId: 'c1', value: 9, comment: 'Lovely demo' }],
+            },
+          ],
+        }),
+      ),
+    );
+    const open = renderPortal('/judge', { session: asStaff('judge') });
+    await userEvent.click(await screen.findByRole('tab', { name: 'Reviews' }));
+    expect(await screen.findByText('Reviews open when the round closes')).toBeInTheDocument();
+    open.unmount();
+
+    const session = asStaff('judge');
+    server.use(
+      http.get(`${E}/rounds`, () =>
+        HttpResponse.json([round({ id: 'rd1', name: 'Round 1', phase: 'closed' })]),
+      ),
+    );
+    renderPortal('/judge', { session });
+    await userEvent.click(await screen.findByRole('tab', { name: 'Reviews' }));
+    expect(await screen.findByText('Meera')).toBeInTheDocument();
+    expect(screen.getByText('Lovely demo')).toBeInTheDocument();
   });
 
   it('opens the team named in the link', async () => {
