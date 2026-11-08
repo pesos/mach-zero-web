@@ -149,3 +149,15 @@
     filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.6)) drop-shadow(0 0 14px rgb(169 150 230 / 0.35));
   }
 }
+
+/*
+ * Menus, selects and dialogs (Radix) lock scrolling while open, which hides the
+ * scrollbar. Keep its space reserved instead, and drop Radix's make-up margin,
+ * so nothing (fixed backgrounds and sidebars included) shifts when one opens.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
