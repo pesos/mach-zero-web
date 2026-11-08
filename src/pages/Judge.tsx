@@ -196,7 +196,7 @@ function TeamWorkspace({
             aria-label="Pick a team"
             value={fromUrl?.id ?? ''}
             onValueChange={go}
-            className="min-h-0 gap-0.5 overflow-y-auto rounded-xl border bg-card/80 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="min-h-0 gap-0.5 overflow-y-auto rounded-xl border bg-card p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {search.filtered.map((t) => (
               <Label
