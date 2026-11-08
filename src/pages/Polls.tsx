@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { ConfirmedOnly } from '@/components/ConfirmedOnly';
+import { PollSetCard, type SetAnswer } from '@/components/PollSetCard';
 
 type Poll = Schemas['Poll'];
 type Vote = { poll: string; answer: PollAnswerInput };
@@ -45,33 +46,64 @@ export function Polls() {
   );
 }
 
+type SetVote = { group: string; answers: SetAnswer[] };
+type SetMutation = {
+  mutate: (v: SetVote) => void;
+  isPending: boolean;
+  isSuccess: boolean;
+  error: unknown;
+  variables?: SetVote;
+};
+
 function ParticipantPolls() {
   const polls = useMyPolls();
   const vote = usePortalMutation((portal, v: Vote) => portal.me.polls.vote(v.poll, v.answer));
-  return <PollList polls={polls.data} error={polls.error ?? vote.error} vote={vote} />;
+  const answerSet = usePortalMutation((portal, v: SetVote) =>
+    portal.me.polls.answerGroup(v.group, v.answers),
+  );
+  return (
+    <PollList polls={polls.data} error={polls.error ?? vote.error} vote={vote} sets={answerSet} />
+  );
 }
 
 function StaffPolls() {
   // Results move while people vote: check every 15 s.
   const polls = useEventQuery('polls', (e) => e.polls.list(), { refetchInterval: 15_000 });
   const vote = useEventMutation((e, v: Vote) => e.polls.vote(v.poll, v.answer));
-  return <PollList polls={polls.data} error={polls.error ?? vote.error} vote={vote} />;
+  const answerSet = useEventMutation((e, v: SetVote) => e.polls.groups.answer(v.group, v.answers));
+  return (
+    <PollList polls={polls.data} error={polls.error ?? vote.error} vote={vote} sets={answerSet} />
+  );
 }
 
 function PollList({
   polls,
   error,
   vote,
+  sets,
 }: {
   polls: Poll[] | undefined;
   error: unknown;
   vote: { mutate: (v: Vote) => void; isPending: boolean; variables?: Vote };
+  sets: SetMutation;
 }) {
   if (!polls && !error) return <CardsSkeleton label="Loading polls" />;
   // Open polls you can still vote in first, then the rest.
   const sorted = [...(polls ?? [])].sort(
     (a, b) => Number(!a.canVote || a.closed) - Number(!b.canVote || b.closed),
   );
+  // A set's questions show together, where its first question would have been.
+  const seen = new Set<string>();
+  type Item = { kind: 'poll'; poll: Poll } | { kind: 'set'; id: string; questions: Poll[] };
+  const items = sorted.flatMap((p): Item[] => {
+    if (!p.group) return [{ kind: 'poll', poll: p }];
+    if (seen.has(p.group.id)) return [];
+    seen.add(p.group.id);
+    const questions = sorted
+      .filter((q) => q.group?.id === p.group!.id)
+      .sort((a, b) => a.group!.position - b.group!.position);
+    return [{ kind: 'set', id: p.group.id, questions }];
+  });
   return (
     <section aria-label="Polls" className="grid gap-4">
       <ErrorText error={error} />
@@ -81,21 +113,37 @@ function PollList({
           <p className="text-sm text-muted-foreground">No polls right now.</p>
         </div>
       )}
-      {sorted.map((p) => (
-        <PollCard
-          key={p.id}
-          poll={p}
-          pending={vote.isPending && vote.variables?.poll === p.id}
-          pendingOption={
-            vote.isPending &&
-            vote.variables?.poll === p.id &&
-            typeof vote.variables.answer === 'string'
-              ? vote.variables.answer
-              : null
-          }
-          onVote={(answer) => vote.mutate({ poll: p.id, answer })}
-        />
-      ))}
+      {items.map((item) => {
+        if (item.kind === 'set') {
+          const mine = sets.variables?.group === item.id;
+          return (
+            <PollSetCard
+              key={item.id}
+              questions={item.questions}
+              pending={sets.isPending && mine}
+              error={mine ? sets.error : null}
+              saved={sets.isSuccess && mine}
+              onSubmit={(answers) => sets.mutate({ group: item.id, answers })}
+            />
+          );
+        }
+        const p = item.poll;
+        return (
+          <PollCard
+            key={p.id}
+            poll={p}
+            pending={vote.isPending && vote.variables?.poll === p.id}
+            pendingOption={
+              vote.isPending &&
+              vote.variables?.poll === p.id &&
+              typeof vote.variables.answer === 'string'
+                ? vote.variables.answer
+                : null
+            }
+            onVote={(answer) => vote.mutate({ poll: p.id, answer })}
+          />
+        );
+      })}
     </section>
   );
 }

@@ -191,4 +191,50 @@ describe('before the team is confirmed', () => {
     expect(await screen.findByText('5.5')).toBeInTheDocument();
     expect(screen.getByText(/Your answer:/)).toHaveTextContent('Your answer: 7');
   });
+
+  it('answers a question set on one card with one submit', async () => {
+    let body: unknown;
+    const session = asParticipant();
+    const group = (position: number) => ({
+      id: 'g1',
+      title: 'Day 1 feedback',
+      description: 'Two minutes.',
+      position,
+    });
+    server.use(
+      http.get(`${P}/me/polls`, () =>
+        HttpResponse.json([
+          poll({
+            id: 'q2',
+            question: 'Anything else?',
+            type: 'short_text',
+            options: [],
+            group: group(1),
+          }),
+          poll({ id: 'q1', question: 'Best talk?', group: group(0) }),
+        ]),
+      ),
+      http.put(`${P}/me/polls/groups/g1/answers`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json([]);
+      }),
+    );
+    renderPortal('/polls', { session });
+    expect(await screen.findByText('Day 1 feedback')).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: 'Submit answers' });
+    expect(submit).toBeDisabled();
+    const talk = screen.getByRole('radiogroup', { name: 'Best talk?' });
+    await userEvent.click(within(talk).getByRole('radio', { name: 'Non-veg' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Anything else?' }), 'More chairs');
+    await userEvent.click(submit);
+    await vi.waitFor(() =>
+      expect(body).toEqual({
+        answers: [
+          { pollId: 'q1', optionId: 'o2' },
+          { pollId: 'q2', value: 'More chairs' },
+        ],
+      }),
+    );
+    expect(await screen.findByText('Saved.')).toBeInTheDocument();
+  });
 });

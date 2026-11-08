@@ -122,6 +122,7 @@ export function poll(overrides: Partial<Schemas['Poll']> = {}): Schemas['Poll'] 
     canManage: false,
     optionsLocked: false,
     mealCheckpoints: [],
+    group: null,
     ...overrides,
   };
 }

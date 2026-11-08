@@ -18,8 +18,10 @@ import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { ConfirmedOnly } from '@/components/ConfirmedOnly';
+import { ScoreBreakdownSheet } from '@/components/ScoreBreakdown';
 import { SearchInput } from '@/components/SearchInput';
 import { useListFilter } from '@/hooks/useListFilter';
+import { useState } from 'react';
 
 /** Averages can be fractional: one decimal at most. */
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
@@ -80,6 +82,7 @@ function StaffBoard() {
   const allowed = who.canJudge || event.leaderboardVisible;
   const rounds = useRounds();
   const [roundId, setRoundId] = useRoundChoice(rounds.data ?? []);
+  const [open, setOpen] = useState<{ id: string; name: string } | null>(null);
   const board = useEventQuery(
     'leaderboard',
     (e) => e.leaderboard(roundId),
@@ -98,6 +101,8 @@ function StaffBoard() {
     [roundId],
   );
   if (!allowed) return <NotYet />;
+  // Admins any time; judges once the round is closed, so scoring stays independent.
+  const canOpen = who.role === 'admin' || (who.canJudge && board.data?.round?.phase === 'closed');
   return (
     <div className="grid gap-4">
       <RoundPicker rounds={rounds.data ?? []} value={roundId} onChange={setRoundId} />
@@ -105,6 +110,12 @@ function StaffBoard() {
         board={board.data}
         error={board.error ?? criteria.error}
         criteria={who.canJudge ? criteria.data : undefined}
+        onOpen={canOpen ? setOpen : undefined}
+      />
+      <ScoreBreakdownSheet
+        team={open}
+        roundId={board.data?.round?.id}
+        onClose={() => setOpen(null)}
       />
     </div>
   );
@@ -128,10 +139,13 @@ function Board({
   board,
   error,
   criteria,
+  onOpen,
 }: {
   board: Schemas['Leaderboard'] | undefined;
   error: unknown;
   criteria?: Schemas['Criterion'][];
+  /** Set when the viewer may open a team's per-judge breakdown. */
+  onOpen?: (team: { id: string; name: string }) => void;
 }) {
   const search = useListFilter(board?.entries ?? [], entryText);
   if (isEventKitError(error, 'LEADERBOARD_HIDDEN')) return <NotYet />;
@@ -155,6 +169,11 @@ function Board({
       </CardHeader>
       <CardContent>
         <ErrorText error={error} />
+        {onOpen && board && board.entries.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Tap a team to see every judge’s marks and remarks.
+          </p>
+        )}
         {board?.entries.length === 0 && (
           <p className="text-sm text-muted-foreground">No scores yet.</p>
         )}
@@ -177,7 +196,17 @@ function Board({
                   {e.rank}
                 </span>
                 <span className="grid min-w-0 gap-0.5">
-                  <span className="font-medium wrap-anywhere">{e.team.name}</span>
+                  {onOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpen(e.team)}
+                      className="text-left font-medium wrap-anywhere text-primary underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+                    >
+                      {e.team.name}
+                    </button>
+                  ) : (
+                    <span className="font-medium wrap-anywhere">{e.team.name}</span>
+                  )}
                   {criteria && (
                     <span className="text-xs text-muted-foreground">
                       {e.judges} {e.judges === 1 ? 'judge' : 'judges'}

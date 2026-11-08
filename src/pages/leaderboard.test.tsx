@@ -120,6 +120,46 @@ describe('leaderboard', () => {
     await waitFor(() => expect(asked).toContain('rd1'));
   });
 
+  it('lets judges open every judge’s marks once the round is closed, not before', async () => {
+    const session = asStaff('judge');
+    let phase: 'released' | 'closed' = 'released';
+    server.use(
+      http.get(`${E}/criteria`, () => HttpResponse.json([])),
+      http.get(`${E}/leaderboard`, () =>
+        HttpResponse.json({ ...board(false), round: { id: 'rd1', name: 'Round 1', phase } }),
+      ),
+      http.get(`${E}/judging/teams/t1/breakdown`, () =>
+        HttpResponse.json({
+          round: { id: 'rd1', name: 'Round 1', phase: 'closed' },
+          team: { id: 't1', name: 'Byte Club' },
+          inRound: true,
+          total: 17.5,
+          maxTotal: 20,
+          criteria: [{ id: 'c1', name: 'Idea', maxScore: 10, average: 8.5 }],
+          judges: [
+            {
+              judge: { id: 'j2', name: 'Meera' },
+              total: 9,
+              updatedAt: '2026-10-31T06:00:00.000Z',
+              scores: [{ criterionId: 'c1', value: 9, comment: 'Lovely demo' }],
+            },
+          ],
+        }),
+      ),
+    );
+    const first = renderPortal('/leaderboard', { session });
+    expect(await screen.findByText('Byte Club')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Byte Club' })).not.toBeInTheDocument();
+    first.unmount();
+
+    phase = 'closed';
+    renderPortal('/leaderboard', { session });
+    await userEvent.click(await screen.findByRole('button', { name: 'Byte Club' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Byte Club' });
+    expect(await within(sheet).findByText('Meera')).toBeInTheDocument();
+    expect(within(sheet).getByText('Lovely demo')).toBeInTheDocument();
+  });
+
   it('lets staff switch rounds', async () => {
     const session = asStaff('judge');
     const asked: (string | null)[] = [];
