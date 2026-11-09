@@ -382,7 +382,7 @@ function OtherAnswer({
                 p.type === 'number' ? 'number' : p.type === 'datetime' ? 'datetime-local' : 'text'
               }
               inputMode={p.type === 'number' ? 'decimal' : undefined}
-              maxLength={p.type === 'short_text' ? 200 : undefined}
+              maxLength={p.type === 'short_text' ? 1000 : undefined}
               disabled={locked}
               value={text}
               onChange={(e) => setText(e.target.value)}

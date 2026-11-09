@@ -159,4 +159,60 @@ describe('before the event day', () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it('shows the organisers’ public leaderboards, picked from a list', async () => {
+    const lb = (id: string, name: string, extra = {}) => ({
+      id,
+      name,
+      method: 'sum',
+      normalise: false,
+      track: null,
+      topN: null,
+      visibility: 'public',
+      position: 0,
+      rounds: [
+        { round: { id: 'rd1', name: 'Heats', phase: 'closed' }, weight: 1 },
+        { round: { id: 'rd2', name: 'Final', phase: 'released' }, weight: 1 },
+      ],
+      ...extra,
+    });
+    const asked: string[] = [];
+    server.use(
+      http.get(`${P}/me/leaderboards`, () =>
+        HttpResponse.json([
+          lb('l1', 'Overall'),
+          lb('l2', 'AI track', { track: { id: 'tr1', name: 'AI' }, topN: 3 }),
+        ]),
+      ),
+      http.get(`${P}/me/leaderboards/:id`, ({ params }) => {
+        asked.push(params.id as string);
+        return HttpResponse.json({
+          leaderboard: lb(params.id as string, 'x'),
+          entries: [
+            {
+              rank: 1,
+              team: { id: 't1', name: 'Byte Club' },
+              total: 25,
+              maxTotal: 40,
+              rounds: [
+                { roundId: 'rd1', total: 8, maxTotal: 20 },
+                { roundId: 'rd2', total: 17, maxTotal: 20 },
+              ],
+              lastRoundId: 'rd2',
+            },
+          ],
+        });
+      }),
+    );
+    // Shown even before the organisers make the per-round leaderboard public.
+    renderPortal('/leaderboard', { session: asParticipant() });
+    expect(await screen.findByRole('heading', { name: 'Overall' })).toBeInTheDocument();
+    expect(await screen.findByText('Heats 8 · Final 17')).toBeInTheDocument();
+    expect(screen.getByText('25 / 40')).toBeInTheDocument();
+    expect(screen.getByText('Heats + Final · Totals added up')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('combobox', { name: 'Leaderboard' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'AI track' }));
+    expect(await screen.findByText(/AI · Top 3/)).toBeInTheDocument();
+    await waitFor(() => expect(asked).toEqual(['l1', 'l2']));
+  });
 });

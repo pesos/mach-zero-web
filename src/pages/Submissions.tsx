@@ -8,14 +8,20 @@ import {
   toDraft,
 } from '@eventkit/sdk';
 import { useMySubmissions, usePortalMutation, useSubmissions } from '@eventkit/sdk/react';
-import { CheckIcon, FileTextIcon, InfoIcon, LockIcon } from 'lucide-react';
+import { CheckIcon, FileTextIcon, InfoIcon, LockIcon, PlusIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { ErrorText } from '@/components/ErrorText';
 import { FeedTabs, groupCounts } from '@/components/FeedTabs';
 import { FieldInputs } from '@/components/FieldInputs';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { StaffOnly } from '@/components/StaffOnly';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +32,7 @@ import { useWho } from '@/lib/staff';
 import { cn } from '@/lib/utils';
 import { Markdown } from '@/components/Markdown';
 import { ConfirmedOnly } from '@/components/ConfirmedOnly';
-import { SubmissionEntries } from './SubmissionEntries';
+import { AnswerValue, SubmissionEntries } from './SubmissionEntries';
 
 type Field = Schemas['PortalSubmission']['fields'][number];
 /** The form helpers expect a scope, which submission forms do not have. */
@@ -43,7 +49,7 @@ export function Submissions() {
     );
   if (who.kind) {
     return (
-      <StaffOnly allowed="judge">
+      <StaffOnly allowed="review">
         <StaffSubmissions />
       </StaffOnly>
     );
@@ -134,7 +140,10 @@ function ByRound({ items, empty }: { items: Schemas['PortalSubmission'][]; empty
 
 function saveMessage(error: unknown): string | undefined {
   if (hasCode(error, 'ROUND_CLOSED'))
-    return 'This round is closed, so answers can no longer change.';
+    return 'This round is closed, so it takes no more submissions.';
+  if (hasCode(error, 'SUBMISSION_CLOSED')) return 'This submission has closed.';
+  if (hasCode(error, 'ALREADY_SUBMITTED'))
+    return 'Your team has already submitted. Ask the organisers if something needs changing.';
   if (hasCode(error, 'TEAM_ELIMINATED')) return 'Your team didn’t go on to this round.';
   if (hasCode(error, 'REGISTRATION_CANCELLED')) {
     return 'Your registration is cancelled, so you cannot submit.';
@@ -143,10 +152,13 @@ function saveMessage(error: unknown): string | undefined {
 }
 
 function SubmissionCard({ submission: s }: { submission: Schemas['PortalSubmission'] }) {
-  const [draft, setDraft] = useState<Draft>(() => toDraft(s.entry?.answers, s.fields));
+  const blank = () => toDraft(undefined, s.fields);
+  const [draft, setDraft] = useState<Draft>(blank);
+  // A team that already sent one opens the form again only on purpose.
+  const [another, setAnother] = useState(false);
   const save = usePortalMutation(
     (portal, answers: Record<string, string | number | string[] | null>) =>
-      portal.me.submissions.saveEntry(s.id, answers),
+      portal.me.submissions.sendResponse(s.id, answers),
   );
   // When the card opened: whether the deadline had passed by then.
   const [openedAt] = useState(Date.now);
@@ -154,9 +166,16 @@ function SubmissionCard({ submission: s }: { submission: Schemas['PortalSubmissi
   const problems = isEventKitError(save.error, 'INVALID_ANSWERS')
     ? Object.values(fieldErrors(save.error))
     : [];
+  const [latest, ...earlier] = s.responses;
+  const showForm = s.canSubmit && (!latest || another);
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    save.mutate(toAnswers(asFields(s.fields), draft));
+    save.mutate(toAnswers(asFields(s.fields), draft), {
+      onSuccess: () => {
+        setAnother(false);
+        setDraft(blank());
+      },
+    });
   };
   return (
     <Card>
@@ -165,6 +184,10 @@ function SubmissionCard({ submission: s }: { submission: Schemas['PortalSubmissi
           {s.title}
           {s.eliminated ? (
             <Badge variant="secondary">Not in this round</Badge>
+          ) : latest ? (
+            <Badge className="bg-success text-white">
+              <CheckIcon aria-hidden /> Submitted
+            </Badge>
           ) : (
             !s.open && (
               <Badge variant="secondary">
@@ -181,71 +204,137 @@ function SubmissionCard({ submission: s }: { submission: Schemas['PortalSubmissi
         {s.deadline && (
           <p className={cn('text-sm', pastDeadline ? 'text-destructive' : 'text-muted-foreground')}>
             {pastDeadline ? 'Deadline passed' : 'Due'} {formatIST(s.deadline)}
-            {pastDeadline && s.open && ': you can still submit, but it will be marked late.'}
+            {pastDeadline &&
+              s.canSubmit &&
+              (s.closesAt
+                ? `: you can still submit until ${formatIST(s.closesAt)}, but it will be marked late.`
+                : ': you can still submit, but it will be marked late.')}
           </p>
         )}
-        {s.entry && (
-          <p className="text-xs text-muted-foreground">
-            Submitted {formatIST(s.entry.createdAt)}
-            {s.entry.updatedAt !== s.entry.createdAt &&
-              ` · last saved ${formatIST(s.entry.updatedAt)}`}
-            {s.entry.submittedBy && ` by ${s.entry.submittedBy.name}`}
-            {s.entry.late && (
-              <Badge variant="destructive" className="ml-2">
-                Late
-              </Badge>
-            )}
-          </p>
+        {s.closesAt && s.open && !pastDeadline && (
+          <p className="text-sm text-muted-foreground">Closes {formatIST(s.closesAt)}</p>
         )}
       </CardHeader>
-      <CardContent>
-        <form className="grid gap-4" onSubmit={onSubmit}>
-          <fieldset disabled={!s.open} className="grid gap-4 sm:grid-cols-2">
-            <FieldInputs
-              fields={asFields(s.fields)}
-              value={draft}
-              onChange={(d) => {
-                setDraft(d);
-                save.reset();
-              }}
-              prefix={`sub-${s.id}`}
-            />
-          </fieldset>
-          {s.eliminated ? (
+      <CardContent className="grid gap-4">
+        {latest && <SentResponse entry={latest} fields={s.fields} latest />}
+        {earlier.length > 0 && (
+          <Accordion type="single" collapsible className="rounded-lg border px-3">
+            <AccordionItem value="earlier" className="border-b-0">
+              <AccordionTrigger className="py-3 text-sm">
+                Earlier responses ({earlier.length})
+              </AccordionTrigger>
+              <AccordionContent className="grid gap-3">
+                {earlier.map((e) => (
+                  <SentResponse key={e.id} entry={e} fields={s.fields} />
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
+        {latest && !s.allowMultiple && s.open && (
+          <p className="text-sm text-muted-foreground">
+            Something wrong? Ask the organisers to remove it so your team can submit again.
+          </p>
+        )}
+        {latest && s.canSubmit && !another && (
+          <Button variant="outline" className="justify-self-start" onClick={() => setAnother(true)}>
+            <PlusIcon aria-hidden /> Submit another response
+          </Button>
+        )}
+        {!latest && s.eliminated && (
+          <p className="text-sm text-muted-foreground">
+            Your team didn’t go on to this round, so it can’t submit here.
+          </p>
+        )}
+        {!latest && !s.eliminated && !s.open && (
+          <p className="text-sm text-muted-foreground">Closed: no more submissions.</p>
+        )}
+        {showForm && (
+          <form className="grid gap-4" onSubmit={onSubmit}>
+            <fieldset disabled={save.isPending} className="grid gap-4 sm:grid-cols-2">
+              <FieldInputs
+                fields={asFields(s.fields)}
+                value={draft}
+                onChange={(d) => {
+                  setDraft(d);
+                  save.reset();
+                }}
+                prefix={`sub-${s.id}`}
+              />
+            </fieldset>
+            <ErrorText error={save.error} message={saveMessage(save.error)} />
+            {problems.length > 0 && (
+              <ul className="list-disc pl-5 text-sm text-destructive">
+                {problems.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            )}
             <p className="text-sm text-muted-foreground">
-              Your team didn’t go on to this round, so it can’t submit here.
+              {s.allowMultiple
+                ? 'Once submitted, a response can’t be edited, but your team can send another.'
+                : 'Your team submits once, and it can’t be edited afterwards. Check your answers first.'}
             </p>
-          ) : (
-            !s.open && (
-              <p className="text-sm text-muted-foreground">
-                Closed: answers can no longer be changed.
-              </p>
-            )
-          )}
-          <ErrorText error={save.error} message={saveMessage(save.error)} />
-          {problems.length > 0 && (
-            <ul className="list-disc pl-5 text-sm text-destructive">
-              {problems.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          )}
-          {s.open && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={save.isPending}>
-                Save
+                Submit
               </Button>
-              {save.isSuccess && (
-                <p role="status" className="flex items-center gap-1 text-sm text-success">
-                  <CheckIcon className="size-4" aria-hidden />
-                  Saved.
-                </p>
+              {another && (
+                <Button type="button" variant="ghost" onClick={() => setAnother(false)}>
+                  Cancel
+                </Button>
               )}
             </div>
-          )}
-        </form>
+          </form>
+        )}
+        {save.isSuccess && !showForm && (
+          <Alert role="status">
+            <CheckIcon />
+            <AlertTitle>Submitted</AlertTitle>
+            <AlertDescription>
+              Your team’s response is in. The organisers can see it now.
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+/** A response the team sent, read-only: when, by whom, and its answers. */
+function SentResponse({
+  entry: e,
+  fields,
+  latest = false,
+}: {
+  entry: Schemas['SubmissionEntry'];
+  fields: Field[];
+  latest?: boolean;
+}) {
+  return (
+    <div className={cn('grid gap-3 rounded-lg border p-3', latest && 'bg-success/5')}>
+      <p className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-medium">
+          {latest ? 'Submitted' : 'Sent'} {formatIST(e.createdAt)}
+        </span>
+        {e.submittedBy && <span className="text-muted-foreground">by {e.submittedBy.name}</span>}
+        {e.late && <Badge variant="destructive">Late</Badge>}
+      </p>
+      <dl className="grid gap-3">
+        {[...fields]
+          .sort((a, b) => a.position - b.position)
+          .map((f) => (
+            <div key={f.id} className="grid gap-0.5">
+              <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                {f.label}
+              </dt>
+              <dd className="min-w-0 text-sm">
+                <AnswerValue field={f} value={e.answers[f.id]} />
+              </dd>
+            </div>
+          ))}
+      </dl>
+    </div>
   );
 }
 

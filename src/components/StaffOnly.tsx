@@ -11,7 +11,8 @@ export function StaffOnly({
   allowed,
   children,
 }: {
-  allowed: 'scan' | 'judge';
+  /** judge: scores teams; review: reads submissions (admins and judges). */
+  allowed: 'scan' | 'judge' | 'review';
   children: ReactNode;
 }) {
   const who = useWho();
@@ -29,12 +30,15 @@ export function StaffOnly({
       </Alert>
     );
   }
-  if (allowed === 'scan' ? !who.canScan : !who.canJudge) {
+  const can = allowed === 'scan' ? who.canScan : allowed === 'judge' ? who.canJudge : who.canReview;
+  if (!can) {
     return (
       <Alert>
         <LockIcon />
         <AlertDescription className="text-foreground">
-          Your role can't use this page.
+          {allowed === 'judge' && who.role === 'admin'
+            ? 'Admins score teams once judging is turned on for them in the console (People).'
+            : "Your role can't use this page."}
         </AlertDescription>
       </Alert>
     );

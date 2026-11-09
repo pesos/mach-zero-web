@@ -26,13 +26,19 @@ const build: Schemas['Criterion'] = {
 
 const asked: { criteria: string | null; scores?: string | null } = { criteria: null };
 
-function judging(teams: Schemas['JudgingTeam'][], criteria = [idea, build]) {
+const SAVED = '2026-10-31T06:00:00.000Z';
+
+type Team = Omit<Schemas['JudgingTeam'], 'myComment'> & { myComment?: string | null };
+
+function judging(teams: Team[], criteria = [idea, build]) {
   server.use(
     http.get(`${E}/criteria`, ({ request }) => {
       asked.criteria = new URL(request.url).searchParams.get('roundId');
       return HttpResponse.json(criteria);
     }),
-    http.get(`${E}/judging/teams`, () => HttpResponse.json(teams)),
+    http.get(`${E}/judging/teams`, () =>
+      HttpResponse.json(teams.map((t) => ({ myComment: null, ...t }))),
+    ),
   );
 }
 
@@ -44,14 +50,15 @@ describe('judging', () => {
         id: 't1',
         name: 'Byte Club',
         members: ['Asha', 'Ravi'],
-        myScores: [{ criterionId: 'c1', value: 6, comment: 'Neat' } as Schemas['Score']],
+        myScores: [{ criterionId: 'c1', value: 6, updatedAt: SAVED }],
+        myComment: 'Neat',
       },
     ]);
     server.use(
       http.put(`${E}/judging/teams/:teamId/scores`, async ({ request }) => {
         sent = await request.json();
         asked.scores = new URL(request.url).searchParams.get('roundId');
-        return HttpResponse.json([]);
+        return HttpResponse.json({ scores: [], comment: null });
       }),
     );
     renderPortal('/judge', { session: asStaff('judge') });
@@ -60,7 +67,7 @@ describe('judging', () => {
     expect(screen.getByText('How good is it')).toBeInTheDocument();
     const idea = screen.getByRole('slider', { name: 'Idea' });
     expect(idea).toHaveAttribute('aria-valuenow', '6');
-    expect(screen.getByLabelText('Comment on Idea')).toHaveValue('Neat');
+    expect(screen.getByLabelText('Your comment on the team')).toHaveValue('Neat');
     const build = screen.getByRole('slider', { name: 'Build' });
     expect(build).toHaveAttribute('aria-valuetext', 'Not scored');
     expect(screen.getByText('1 of 2 not scored yet')).toBeInTheDocument();
@@ -74,14 +81,15 @@ describe('judging', () => {
     await userEvent.click(buildTicks[4]!);
     expect(build).toHaveAttribute('aria-valuetext', '4 of 5');
     expect(screen.getByLabelText('Total')).toHaveTextContent('12 / 15');
-    await userEvent.clear(screen.getByLabelText('Comment on Idea'));
+    await userEvent.clear(screen.getByLabelText('Your comment on the team'));
     await userEvent.click(screen.getByRole('button', { name: 'Save scores' }));
     expect(await screen.findByText('Saved.')).toBeInTheDocument();
     expect(sent).toEqual({
       scores: [
-        { criterionId: 'c1', value: 8, comment: null },
-        { criterionId: 'c2', value: 4, comment: null },
+        { criterionId: 'c1', value: 8 },
+        { criterionId: 'c2', value: 4 },
       ],
+      comment: null,
     });
     expect(asked).toMatchObject({ criteria: 'rd1', scores: 'rd1' });
   });
@@ -93,8 +101,8 @@ describe('judging', () => {
         name: 'Byte Club',
         members: ['Asha'],
         myScores: [
-          { criterionId: 'c1', value: 6, comment: null } as Schemas['Score'],
-          { criterionId: 'c2', value: 3, comment: null } as Schemas['Score'],
+          { criterionId: 'c1', value: 6, updatedAt: SAVED },
+          { criterionId: 'c2', value: 3, updatedAt: SAVED },
         ],
       },
       { id: 't2', name: 'Null Pointers', members: ['Ravi'], myScores: [] },
@@ -121,8 +129,8 @@ describe('judging', () => {
         name: 'Null Pointers',
         members: ['Ravi'],
         myScores: [
-          { criterionId: 'c1', value: 3, comment: null } as Schemas['Score'],
-          { criterionId: 'c2', value: 2, comment: null } as Schemas['Score'],
+          { criterionId: 'c1', value: 3, updatedAt: SAVED },
+          { criterionId: 'c2', value: 2, updatedAt: SAVED },
         ],
       },
     ]);
@@ -201,7 +209,7 @@ describe('judging', () => {
     await userEvent.click(await screen.findByRole('tab', { name: 'Submission' }));
     const link = await screen.findByRole('link', { name: 'git.test/byte' });
     expect(link).toHaveAttribute('href', 'https://git.test/byte');
-    expect(screen.getByText(/Saved by Asha/)).toBeInTheDocument();
+    expect(screen.getByText(/Sent by Asha/)).toBeInTheDocument();
     first.unmount();
 
     // On Round 2, Round 1's submission still shows below it.
@@ -238,7 +246,8 @@ describe('judging', () => {
               judge: { id: 'j2', name: 'Meera' },
               total: 9,
               updatedAt: '2026-10-31T06:00:00.000Z',
-              scores: [{ criterionId: 'c1', value: 9, comment: 'Lovely demo' }],
+              comment: 'Lovely demo',
+              scores: [{ criterionId: 'c1', value: 9 }],
             },
           ],
         }),
@@ -287,7 +296,8 @@ describe('judging', () => {
               judge: { id: 'j2', name: 'Meera' },
               total: 9,
               updatedAt: '2026-10-31T06:00:00.000Z',
-              scores: [{ criterionId: 'c1', value: 9, comment: 'Round one remark' }],
+              comment: 'Round one remark',
+              scores: [{ criterionId: 'c1', value: 9 }],
             },
           ],
         });
@@ -354,13 +364,13 @@ describe('judging', () => {
         id: 't1',
         name: 'Byte Club',
         members: ['Asha'],
-        myScores: [{ criterionId: 'c2', value: 3, comment: null } as Schemas['Score']],
+        myScores: [{ criterionId: 'c2', value: 3, updatedAt: SAVED }],
       },
     ]);
     server.use(
       http.put(`${E}/judging/teams/:teamId/scores`, async ({ request }) => {
         sent = await request.json();
-        return HttpResponse.json([]);
+        return HttpResponse.json({ scores: [], comment: null });
       }),
     );
     renderPortal('/judge', { session: asStaff('judge') });
@@ -374,7 +384,7 @@ describe('judging', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save scores' }));
     await screen.findByText('Saved.');
-    expect(sent).toEqual({ scores: [{ criterionId: 'c1', value: 1, comment: null }] });
+    expect(sent).toEqual({ scores: [{ criterionId: 'c1', value: 1 }], comment: null });
   });
 
   it('shows a save that was refused', async () => {
@@ -410,5 +420,32 @@ describe('judging', () => {
     server.use(http.get(`${E}/judging/teams`, () => apiError(500, 'INTERNAL', 'Judging trouble.')));
     renderPortal('/judge', { session: asStaff('judge') });
     expect(await screen.findByRole('alert')).toHaveTextContent('Judging trouble.');
+  });
+
+  it('locks scores on a closed round', async () => {
+    judging([
+      {
+        id: 't1',
+        name: 'Byte Club',
+        members: ['Asha'],
+        myScores: [{ criterionId: 'c1', value: 6, updatedAt: SAVED }],
+        myComment: 'Neat',
+      },
+    ]);
+    const session = asStaff('judge');
+    server.use(
+      http.get(`${E}/rounds`, () =>
+        HttpResponse.json([round({ id: 'rd1', name: 'Round 1', phase: 'closed' })]),
+      ),
+    );
+    renderPortal('/judge', { session });
+    expect(await screen.findByText('This round is closed')).toBeInTheDocument();
+    expect(screen.getByLabelText('Your comment on the team')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Save scores' })).not.toBeInTheDocument();
+  });
+
+  it('tells an admin to turn on judging before they can score', async () => {
+    renderPortal('/judge', { session: asStaff('admin', false) });
+    expect(await screen.findByText(/once judging is turned on for them/)).toBeInTheDocument();
   });
 });

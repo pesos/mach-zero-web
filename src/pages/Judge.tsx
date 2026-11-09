@@ -1,6 +1,6 @@
 import type { Schemas } from '@eventkit/sdk';
 import { useCriteria, useEventMutation, useJudgingTeams, useRounds } from '@eventkit/sdk/react';
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, LockIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorText } from '@/components/ErrorText';
@@ -10,13 +10,14 @@ import { SearchInput } from '@/components/SearchInput';
 import { CardsSkeleton } from '@/components/Skeletons';
 import { StaffOnly } from '@/components/StaffOnly';
 import { TeamSubmission } from '@/components/TeamSubmission';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useListFilter } from '@/hooks/useListFilter';
 import { firstOpenRound, useRoundChoice } from '@/lib/rounds';
 import { useWho } from '@/lib/staff';
@@ -260,6 +261,7 @@ function TeamWorkspace({
                     team={t}
                     criteria={criteria}
                     roundId={roundId}
+                    locked={rounds.find((r) => r.id === roundId)?.phase === 'closed'}
                     onNext={next && t.id === current.id ? () => go(next.id) : undefined}
                   />
                 </div>
@@ -333,15 +335,21 @@ function ProgressMark({ progress }: { progress: Progress }) {
   );
 }
 
+/** A judge's comment on the team: the API takes up to this many characters. */
+const COMMENT_MAX = 2000;
+
 function ScoreCard({
   team,
   criteria,
   roundId,
+  locked = false,
   onNext,
 }: {
   roundId: string;
   team: Schemas['JudgingTeam'];
   criteria: Schemas['Criterion'][];
+  /** The round is closed: scores are shown but can't change. */
+  locked?: boolean;
   onNext?: () => void;
 }) {
   const mine = new Map(team.myScores.map((s) => [s.criterionId, s]));
@@ -349,19 +357,14 @@ function ScoreCard({
   const [values, setValues] = useState<Record<string, number | null>>(() =>
     Object.fromEntries(criteria.map((c) => [c.id, mine.get(c.id)?.value ?? null])),
   );
-  const [comments, setComments] = useState<Record<string, string>>(() =>
-    Object.fromEntries(criteria.map((c) => [c.id, mine.get(c.id)?.comment ?? ''])),
-  );
+  const [comment, setComment] = useState(team.myComment ?? '');
   const save = useEventMutation((e) =>
     e.judging.saveScores(
       team.id,
       criteria
         .filter((c) => values[c.id] != null)
-        .map((c) => ({
-          criterionId: c.id,
-          value: values[c.id]!,
-          comment: comments[c.id]?.trim() || null,
-        })),
+        .map((c) => ({ criterionId: c.id, value: values[c.id]! })),
+      comment.trim() || null,
       roundId,
     ),
   );
@@ -398,7 +401,14 @@ function ScoreCard({
           </span>
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-6">
+        {locked && (
+          <Alert>
+            <LockIcon />
+            <AlertTitle>This round is closed</AlertTitle>
+            <AlertDescription>Scores are locked. The organisers can reopen it.</AlertDescription>
+          </Alert>
+        )}
         <form
           className="grid gap-6"
           onSubmit={(e) => {
@@ -406,45 +416,57 @@ function ScoreCard({
             save.mutate(undefined);
           }}
         >
-          {criteria.map((c) => (
-            <ScoreSlider
-              key={c.id}
-              id={`${team.id}-${c.id}`}
-              criterion={c}
-              value={values[c.id] ?? null}
-              onChange={(v) => setScore(c.id, v)}
-              comment={comments[c.id] ?? ''}
-              onComment={(text) => {
-                setComments({ ...comments, [c.id]: text });
-                save.reset();
-              }}
-            />
-          ))}
+          <fieldset disabled={locked} className="grid gap-6">
+            {criteria.map((c) => (
+              <ScoreSlider
+                key={c.id}
+                id={`${team.id}-${c.id}`}
+                criterion={c}
+                value={values[c.id] ?? null}
+                onChange={(v) => setScore(c.id, v)}
+              />
+            ))}
+            <div className="grid gap-2">
+              <Label htmlFor={`${team.id}-comment`}>Your comment on the team</Label>
+              <Textarea
+                id={`${team.id}-comment`}
+                placeholder="What stood out, what to improve (optional)"
+                maxLength={COMMENT_MAX}
+                value={comment}
+                onChange={(e) => {
+                  setComment(e.target.value);
+                  save.reset();
+                }}
+              />
+            </div>
+          </fieldset>
           <ErrorText error={save.error} />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={scored.length === 0 || save.isPending}>
-              Save scores
-            </Button>
-            {save.isSuccess && (
-              <>
-                <p role="status" className="flex items-center gap-1 text-sm text-success">
-                  <CheckIcon className="size-4" aria-hidden />
-                  Saved.
+          {!locked && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="submit" disabled={scored.length === 0 || save.isPending}>
+                Save scores
+              </Button>
+              {save.isSuccess && (
+                <>
+                  <p role="status" className="flex items-center gap-1 text-sm text-success">
+                    <CheckIcon className="size-4" aria-hidden />
+                    Saved.
+                  </p>
+                  {onNext && (
+                    <Button type="button" variant="outline" className="ml-auto" onClick={onNext}>
+                      Next team
+                      <ChevronRightIcon aria-hidden />
+                    </Button>
+                  )}
+                </>
+              )}
+              {scored.length < criteria.length && !save.isSuccess && (
+                <p className="text-xs text-muted-foreground">
+                  {criteria.length - scored.length} of {criteria.length} not scored yet
                 </p>
-                {onNext && (
-                  <Button type="button" variant="outline" className="ml-auto" onClick={onNext}>
-                    Next team
-                    <ChevronRightIcon aria-hidden />
-                  </Button>
-                )}
-              </>
-            )}
-            {scored.length < criteria.length && !save.isSuccess && (
-              <p className="text-xs text-muted-foreground">
-                {criteria.length - scored.length} of {criteria.length} not scored yet
-              </p>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>
@@ -459,37 +481,52 @@ function ScoreSlider({
   criterion: c,
   value,
   onChange,
-  comment,
-  onComment,
 }: {
   id: string;
   criterion: Schemas['Criterion'];
   value: number | null;
   onChange: (value: number | null) => void;
-  comment: string;
-  onComment: (text: string) => void;
 }) {
   const ticks =
     c.maxScore <= TICKS_UP_TO ? Array.from({ length: c.maxScore + 1 }, (_, i) => i) : [];
   return (
     <div className="grid gap-2">
       <div className="flex items-end justify-between gap-3">
-        <div className="grid gap-0.5">
-          <Label id={`${id}-label`}>{c.name}</Label>
+        <div className="grid min-w-0 gap-0.5">
+          <Label id={`${id}-label`} className="wrap-anywhere">
+            {c.name}
+          </Label>
           {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
         </div>
-        <output
-          htmlFor={id}
-          aria-live="polite"
-          className="shrink-0 text-sm text-muted-foreground tabular-nums"
-        >
-          <span
-            className={cn('font-display text-2xl', value === null ? 'opacity-40' : 'text-primary')}
+        <div className="flex shrink-0 items-center gap-1">
+          {value !== null && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => onChange(null)}
+              aria-label={`Clear ${c.name}`}
+            >
+              Clear
+            </Button>
+          )}
+          <output
+            htmlFor={id}
+            aria-live="polite"
+            className="text-sm text-muted-foreground tabular-nums"
           >
-            {value ?? '–'}
-          </span>{' '}
-          / {c.maxScore}
-        </output>
+            <span
+              className={cn(
+                'font-display text-2xl',
+                value === null ? 'opacity-40' : 'text-primary',
+              )}
+            >
+              {value ?? '–'}
+            </span>{' '}
+            / {c.maxScore}
+          </output>
+        </div>
       </div>
       <Slider
         id={id}
@@ -528,26 +565,6 @@ function ScoreSlider({
           ))}
         </div>
       )}
-      <div className="flex gap-2">
-        <Input
-          aria-label={`Comment on ${c.name}`}
-          placeholder="Comment (optional)"
-          value={comment}
-          onChange={(e) => onComment(e.target.value)}
-        />
-        {value !== null && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="shrink-0 self-center text-muted-foreground"
-            onClick={() => onChange(null)}
-            aria-label={`Clear ${c.name}`}
-          >
-            Clear
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

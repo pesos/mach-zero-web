@@ -224,7 +224,7 @@ export function PollSetCard({
                           : 'text'
                     }
                     inputMode={q.type === 'number' ? 'decimal' : undefined}
-                    maxLength={q.type === 'short_text' ? 200 : undefined}
+                    maxLength={q.type === 'short_text' ? 1000 : undefined}
                     disabled={locked}
                     value={d.text ?? ''}
                     onChange={(e) => set(q.id, { text: e.target.value })}

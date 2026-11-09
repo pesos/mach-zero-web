@@ -2,10 +2,15 @@ import { isEventKitError, type Schemas } from '@eventkit/sdk';
 import {
   useEventQuery,
   useMyLeaderboard,
+  useMyLeaderboardResults,
+  useMyLeaderboards,
   useMySubmissions,
   usePortalInfo,
   useRounds,
+  useSavedLeaderboardResults,
+  useSavedLeaderboards,
 } from '@eventkit/sdk/react';
+import { type ReactNode, useState } from 'react';
 import { EyeOffIcon, InfoIcon, TrophyIcon } from 'lucide-react';
 import { ErrorText } from '@/components/ErrorText';
 import { RoundPicker } from '@/components/RoundPicker';
@@ -13,6 +18,14 @@ import { useRoundChoice } from '@/lib/rounds';
 import { ListSkeleton } from '@/components/Skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { OpensOnEventDay } from '@/components/OpensOnEventDay';
 import { useActivitiesOpen } from '@/lib/event-day';
 import { useWho } from '@/lib/staff';
@@ -51,8 +64,34 @@ function ParticipantBoard() {
   const { event } = usePortalInfo().data!;
   const day = useActivitiesOpen();
   if (!day.open) return <OpensOnEventDay what="The leaderboard and results" from={day.from} />;
-  if (!event.leaderboardVisible) return <NotYet />;
-  return <ParticipantRounds />;
+  return <ParticipantBoards roundsVisible={event.leaderboardVisible} />;
+}
+
+/** The organisers' public leaderboards (per track, top teams, overall), then each round's. */
+function ParticipantBoards({ roundsVisible }: { roundsVisible: boolean }) {
+  const saved = useMyLeaderboards();
+  const [picked, setPicked] = useState<string | null>(null);
+  const list = saved.data ?? [];
+  const chosen = list.find((l) => l.id === picked)?.id ?? list[0]?.id ?? null;
+  const results = useMyLeaderboardResults(chosen);
+  if (saved.isPending && !roundsVisible)
+    return <ListSkeleton label="Loading the leaderboards" rows={5} />;
+  if (list.length === 0 && !roundsVisible)
+    return saved.isError ? <ErrorText error={saved.error} /> : <NotYet />;
+  return (
+    <div className="grid gap-6">
+      {list.length > 0 && (
+        <SavedBoards
+          list={list}
+          value={chosen}
+          onChange={setPicked}
+          results={results.data}
+          error={results.error}
+        />
+      )}
+      {roundsVisible && <ParticipantRounds />}
+    </div>
+  );
 }
 
 /** Participants learn of rounds through the submission forms they can see. */
@@ -77,7 +116,7 @@ function ParticipantRounds() {
 function StaffBoard() {
   const who = useWho();
   const { event } = usePortalInfo().data!;
-  const allowed = who.canJudge || event.leaderboardVisible;
+  const allowed = who.canReview || event.leaderboardVisible;
   const rounds = useRounds();
   const [roundId, setRoundId] = useRoundChoice(rounds.data ?? []);
   const board = useEventQuery(
@@ -93,20 +132,143 @@ function StaffBoard() {
     'criteria',
     (e) => e.criteria.list(roundId),
     {
-      enabled: allowed && who.canJudge && !rounds.isPending,
+      enabled: allowed && who.canReview && !rounds.isPending,
     },
     [roundId],
   );
-  if (!allowed) return <NotYet />;
+  if (!allowed) return <StaffSaved fallback={<NotYet />} />;
   return (
-    <div className="grid gap-4">
-      <RoundPicker rounds={rounds.data ?? []} value={roundId} onChange={setRoundId} />
-      <Board
-        board={board.data}
-        error={board.error ?? criteria.error}
-        criteria={who.canJudge ? criteria.data : undefined}
-      />
+    <div className="grid gap-6">
+      <StaffSaved />
+      <div className="grid gap-4">
+        <RoundPicker rounds={rounds.data ?? []} value={roundId} onChange={setRoundId} />
+        <Board
+          board={board.data}
+          error={board.error ?? criteria.error}
+          criteria={who.canReview ? criteria.data : undefined}
+        />
+      </div>
     </div>
+  );
+}
+
+/** The saved leaderboards this staff member may see, if any. */
+function StaffSaved({ fallback = null }: { fallback?: ReactNode }) {
+  const saved = useSavedLeaderboards();
+  const [picked, setPicked] = useState<string | null>(null);
+  const list = saved.data ?? [];
+  const chosen = list.find((l) => l.id === picked)?.id ?? list[0]?.id ?? null;
+  const results = useSavedLeaderboardResults(chosen);
+  if (list.length === 0) return fallback;
+  return (
+    <SavedBoards
+      list={list}
+      value={chosen}
+      onChange={setPicked}
+      results={results.data}
+      error={results.error}
+    />
+  );
+}
+
+const METHOD: Record<Schemas['SavedLeaderboard']['method'], string> = {
+  sum: 'Totals added up',
+  percent: 'Average % of each round',
+  average: 'Average of the rounds',
+};
+
+/** A saved leaderboard, picked from the ones shown: its ranking over its rounds. */
+function SavedBoards({
+  list,
+  value,
+  onChange,
+  results,
+  error,
+}: {
+  list: Schemas['SavedLeaderboard'][];
+  value: string | null;
+  onChange: (id: string) => void;
+  results: Schemas['LeaderboardResults'] | undefined;
+  error: unknown;
+}) {
+  const lb = list.find((l) => l.id === value)!;
+  const roundName = new Map(lb.rounds.map((r) => [r.round.id, r.round.name]));
+  return (
+    <Card>
+      <CardHeader className="gap-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <TrophyIcon className="size-4 text-primary" />
+          {lb.name}
+        </CardTitle>
+        {list.length > 1 && (
+          <div className="grid gap-2 sm:max-w-xs">
+            <Label htmlFor="saved-leaderboard">Leaderboard</Label>
+            <Select value={lb.id} onValueChange={onChange}>
+              <SelectTrigger id="saved-leaderboard" className="w-full min-w-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {list.map((l) => (
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        <CardDescription>
+          {[
+            lb.track?.name,
+            lb.topN ? `Top ${lb.topN}` : null,
+            lb.rounds.map((r) => r.round.name).join(' + '),
+            lb.rounds.length > 1 ? METHOD[lb.method] : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ErrorText error={error} />
+        {!results && !error && <ListSkeleton label="Loading the leaderboard" rows={5} />}
+        {results?.entries.length === 0 && (
+          <p className="text-sm text-muted-foreground">No scores yet.</p>
+        )}
+        {results && results.entries.length > 0 && (
+          <ol aria-label={lb.name} className="grid divide-y">
+            {results.entries.map((e) => (
+              <li key={e.team.id} className="flex items-center gap-3 py-2.5 text-sm">
+                <span
+                  className={cn(
+                    'grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold',
+                    e.rank === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted',
+                  )}
+                >
+                  {e.rank}
+                </span>
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="font-medium wrap-anywhere">{e.team.name}</span>
+                  {e.rounds.length > 1 && (
+                    <span className="text-xs text-muted-foreground">
+                      {e.rounds
+                        .map(
+                          (r) =>
+                            `${roundName.get(r.roundId)} ${r.total === null ? '—' : fmt(r.total)}`,
+                        )
+                        .join(' · ')}
+                    </span>
+                  )}
+                </span>
+                <span className="ml-auto shrink-0 text-muted-foreground tabular-nums">
+                  {fmt(e.total)}
+                  {lb.method === 'percent' ? '%' : ` / ${fmt(e.maxTotal)}`}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

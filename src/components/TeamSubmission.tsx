@@ -56,43 +56,64 @@ function RoundForms({ teamId, forms }: { teamId: string; forms: Submission[] }) 
 
 function FormEntry({ submission: s, teamId }: { submission: Submission; teamId: string }) {
   const entries = useSubmissionEntries(s.id);
-  const entry = entries.data?.find((e) => e.team.id === teamId);
+  // Every response the team sent, newest first.
+  const mine = (entries.data ?? [])
+    .filter((e) => e.team.id === teamId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const fields = [...s.fields].sort((a, b) => a.position - b.position);
   return (
     <Card className="gap-4">
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           <span className="min-w-0 wrap-anywhere">{s.title}</span>
-          {entry?.late && <Badge variant="destructive">Late</Badge>}
+          {mine.length > 1 && <Badge variant="secondary">{mine.length} responses</Badge>}
         </CardTitle>
         <CardDescription>
-          {entry
-            ? `${entry.submittedBy ? `Saved by ${entry.submittedBy.name} · ` : ''}${formatIST(entry.updatedAt)}`
+          {mine[0]
+            ? `${mine[0].submittedBy ? `Sent by ${mine[0].submittedBy.name} · ` : ''}${formatIST(mine[0].createdAt)}`
             : entries.isPending
               ? 'Loading…'
               : 'Not submitted'}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-4">
         <ErrorText error={entries.error} />
         {entries.isPending && <ListSkeleton label="Loading the answers" rows={2} />}
-        {entries.data && !entry && (
+        {entries.data && mine.length === 0 && (
           <p className="text-sm text-muted-foreground">This team hasn’t submitted this form.</p>
         )}
-        {entry && (
-          <dl className="grid gap-4">
-            {fields.map((f) => (
-              <div key={f.id} className="grid gap-1">
-                <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  {f.label}
-                </dt>
-                <dd className="min-w-0 text-sm">
-                  <AnswerValue field={f} value={entry.answers[f.id]} />
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
+        {mine.map((entry, i) => (
+          <section
+            key={entry.id}
+            aria-label={mine.length > 1 ? `Response ${mine.length - i}` : undefined}
+            className="grid gap-3 border-t pt-4 first:border-t-0 first:pt-0"
+          >
+            {mine.length > 1 && (
+              <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Response {mine.length - i}</span>
+                {formatIST(entry.createdAt)}
+                {entry.late && <Badge variant="destructive">Late</Badge>}
+              </p>
+            )}
+            {mine.length === 1 && entry.late && (
+              <Badge variant="destructive" className="justify-self-start">
+                Late
+              </Badge>
+            )}
+            <dl className="grid gap-4">
+              {fields.map((f) => (
+                <div key={f.id} className="grid gap-1">
+                  <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {f.label}
+                  </dt>
+                  <dd className="min-w-0 text-sm">
+                    <AnswerValue field={f} value={entry.answers[f.id]} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
       </CardContent>
     </Card>
   );

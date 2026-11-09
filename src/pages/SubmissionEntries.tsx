@@ -1,5 +1,5 @@
 import { answerText, formatIST, type Schemas } from '@eventkit/sdk';
-import { useSubmissionEntries } from '@eventkit/sdk/react';
+import { useEventQuery, useSubmissionEntries } from '@eventkit/sdk/react';
 import { ChevronsDownUpIcon, ChevronsUpDownIcon, ExternalLinkIcon, GavelIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -63,7 +63,7 @@ export function SubmissionEntries({ submission: s }: { submission: Submission })
   const shown = [...search.filtered].sort((a, b) =>
     sort === 'team'
       ? a.team.name.localeCompare(b.team.name)
-      : b.updatedAt.localeCompare(a.updatedAt),
+      : b.createdAt.localeCompare(a.createdAt),
   );
   const allOpen = shown.length > 0 && shown.every((e) => open.includes(e.id));
 
@@ -72,11 +72,12 @@ export function SubmissionEntries({ submission: s }: { submission: Submission })
       <CardHeader>
         <CardTitle className="text-base wrap-anywhere">{s.title}</CardTitle>
         <CardDescription>
-          {s.round.name} · {s.entryCount} {s.entryCount === 1 ? 'entry' : 'entries'}
+          {s.round.name} · {s.entryCount} {s.entryCount === 1 ? 'response' : 'responses'}
           {s.deadline && ` · due ${formatIST(s.deadline)}`}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
+        <WhoSubmitted submissionId={s.id} />
         {entries.isPending && <ListSkeleton label="Loading entries" rows={3} />}
         <ErrorText error={entries.error} />
         {entries.data?.length === 0 && (
@@ -131,6 +132,42 @@ export function SubmissionEntries({ submission: s }: { submission: Submission })
   );
 }
 
+/** How many teams have submitted, and which expected ones haven't yet. */
+function WhoSubmitted({ submissionId }: { submissionId: string }) {
+  const status = useEventQuery('submission-status', (e) => e.submissions.status(submissionId), {}, [
+    submissionId,
+  ]);
+  if (!status.data) return <ErrorText error={status.error} />;
+  const { submitted, pending } = status.data;
+  return (
+    <Accordion type="single" collapsible className="rounded-lg border px-3 sm:px-4">
+      <AccordionItem value="pending" className="border-b-0">
+        <AccordionTrigger className="gap-3 py-3 hover:no-underline">
+          <span className="flex flex-wrap items-center gap-2 text-sm font-normal">
+            <Badge variant="secondary">{submitted.length} submitted</Badge>
+            <Badge variant={pending.length ? 'destructive' : 'secondary'}>
+              {pending.length} yet to submit
+            </Badge>
+          </span>
+        </AccordionTrigger>
+        <AccordionContent>
+          {pending.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Every team has submitted.</p>
+          ) : (
+            <ul className="grid gap-1 text-sm sm:grid-cols-2" aria-label="Yet to submit">
+              {pending.map((t) => (
+                <li key={t.id} className="wrap-anywhere">
+                  {t.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
 function EntryRow({ entry: e, fields }: { entry: Entry; fields: Field[] }) {
   const who = useWho();
   const links = linksIn(e, fields);
@@ -143,7 +180,7 @@ function EntryRow({ entry: e, fields }: { entry: Entry; fields: Field[] }) {
             {e.late && <Badge variant="destructive">Late</Badge>}
           </span>
           <span className="truncate text-xs font-normal text-muted-foreground">
-            {formatIST(e.updatedAt)}
+            {formatIST(e.createdAt)}
             {links.length > 0 && ` · ${links.map(shortUrl).join(' · ')}`}
           </span>
         </span>
@@ -163,8 +200,7 @@ function EntryRow({ entry: e, fields }: { entry: Entry; fields: Field[] }) {
         </dl>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3">
           <p className="text-xs text-muted-foreground">
-            {e.submittedBy ? `Saved by ${e.submittedBy.name}` : 'Saved'} · {formatIST(e.updatedAt)}
-            {e.createdAt !== e.updatedAt && ` · first sent ${formatIST(e.createdAt)}`}
+            {e.submittedBy ? `Sent by ${e.submittedBy.name}` : 'Sent'} · {formatIST(e.createdAt)}
           </p>
           {who.canJudge && (
             <Button size="sm" variant="outline" asChild>

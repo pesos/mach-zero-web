@@ -210,13 +210,30 @@ function Registration({ me }: { me: Me }) {
       <CardContent className="grid gap-4">
         {showQr ? (
           <div className="grid justify-items-center gap-3 rounded-xl bg-muted/60 p-5 text-center sm:grid-cols-[auto_1fr] sm:justify-items-start sm:text-left">
-            <div className="rounded-lg border bg-white p-3 shadow-sm">
-              <QRCodeSVG value={me.qrToken} size={200} title="Your check-in QR code" />
+            {/* Always solid black on white: forced dark modes and high-contrast
+                settings must not recolour it, or scanners can't read it. */}
+            <div
+              className="rounded-lg border bg-white p-3 shadow-sm"
+              style={{ colorScheme: 'light', forcedColorAdjust: 'none' }}
+            >
+              <QRCodeSVG
+                value={me.qrToken}
+                size={200}
+                marginSize={2}
+                bgColor="#ffffff"
+                fgColor="#000000"
+                title="Your check-in QR code"
+              />
             </div>
-            <p className="max-w-xs self-center text-sm text-muted-foreground">
-              Show this at the entry and at checkpoints. If the camera can't read it, give your
-              participant ID.
-            </p>
+            <div className="grid max-w-xs gap-2 self-center text-sm text-muted-foreground">
+              <p>
+                Show this at the entry and at checkpoints. If the camera can't read it, give your
+                participant ID:
+              </p>
+              <p className="font-mono text-2xl font-semibold tracking-wider text-foreground">
+                {me.participantCode}
+              </p>
+            </div>
           </div>
         ) : (
           <p className="rounded-xl bg-muted/60 p-5 text-sm text-muted-foreground">

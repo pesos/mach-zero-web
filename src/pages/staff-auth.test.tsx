@@ -205,4 +205,13 @@ describe('changing a password', () => {
     renderPortal('/password');
     expect(await screen.findByText(/This page is for the event's staff/)).toBeInTheDocument();
   });
+
+  it('says who is signed in already, and lets them switch account', async () => {
+    renderPortal('/staff/login', { session: asStaff('volunteer') });
+    expect(await screen.findByText('You’re already signed in')).toBeInTheDocument();
+    expect(screen.getByText(/signed in to this event as a volunteer/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Continue' })).toHaveAttribute('href', '/scan');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in as someone else' }));
+    expect(await screen.findByLabelText('Email')).toBeInTheDocument();
+  });
 });

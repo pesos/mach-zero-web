@@ -55,6 +55,7 @@ export function team(overrides: Partial<Schemas['Team']> = {}): Schemas['Team'] 
     id: 't1',
     name: 'Byte Club',
     leaderRegistrationId: 'r1',
+    trackId: null,
     createdAt: T0,
     status: 'registered',
     belowMinimum: false,
@@ -182,12 +183,18 @@ export function asParticipant(
 }
 
 /** Staff (or the owner, as admin) signed in on the portal: returns their session token. */
-export function asStaff(role: 'admin' | 'volunteer' | 'judge'): string {
+/** A signed-in staff member. Admins score teams only with `canJudge` (on by default here). */
+export function asStaff(
+  role: 'admin' | 'volunteer' | 'judge',
+  canJudge = role !== 'volunteer',
+): string {
   server.use(
     http.get(E, () =>
       HttpResponse.json({
         event: { ...portalInfo().event, id: EVENT_ID, exitReasons: ['Bathroom', 'Emergency'] },
         role,
+        isOwner: role === 'admin',
+        canJudge,
       }),
     ),
     http.get(`${E}/rounds`, () => HttpResponse.json([round()])),

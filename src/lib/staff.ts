@@ -16,7 +16,10 @@ export function useWho() {
     role,
     loading: staffish && event.isPending,
     canScan: role === 'admin' || role === 'volunteer',
-    canJudge: role === 'admin' || role === 'judge',
+    /** Scores teams: judges, and admins once judging is turned on in the console. */
+    canJudge: staffish && (event.data?.canJudge ?? false),
+    /** Reads submissions and the full leaderboard: admins and judges. */
+    canReview: role === 'admin' || role === 'judge',
   };
 }
 

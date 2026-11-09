@@ -69,15 +69,15 @@ export function ScoreBreakdownView({ teamId, roundId }: { teamId: string; roundI
                             {fmt(s.value)} / {c.maxScore}
                           </span>
                         </div>
-                        {s.comment && (
-                          <p className="flex gap-1.5 text-xs text-muted-foreground">
-                            <MessageSquareTextIcon aria-hidden className="mt-0.5 size-3 shrink-0" />
-                            <span className="min-w-0 wrap-anywhere">{s.comment}</span>
-                          </p>
-                        )}
                       </div>
                     );
                   })}
+                  {j.comment && (
+                    <p className="mt-1 flex gap-1.5 text-sm text-muted-foreground">
+                      <MessageSquareTextIcon aria-hidden className="mt-1 size-3.5 shrink-0" />
+                      <span className="min-w-0 whitespace-pre-line wrap-anywhere">{j.comment}</span>
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </li>

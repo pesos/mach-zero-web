@@ -68,6 +68,9 @@ export const handlers = [
   http.get(P, () => HttpResponse.json(portalInfo())),
   http.get(`${API}/health`, () => HttpResponse.json({ status: 'ok' })),
   http.put(`${BUCKET}/*`, () => new HttpResponse(null, { status: 200 })),
+  // No saved leaderboards unless a test sets some up.
+  http.get(`${P}/me/leaderboards`, () => HttpResponse.json([])),
+  http.get(`${E}/leaderboards`, () => HttpResponse.json([])),
 ];
 
 export const server = setupServer(...handlers);

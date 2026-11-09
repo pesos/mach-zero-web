@@ -34,10 +34,14 @@ const mine = (
   description: '',
   position: 0,
   deadline: null,
+  closesAt: null,
+  allowMultiple: false,
   fields: [field],
   open,
+  canSubmit: open,
   eliminated: false,
   entry: null,
+  responses: [],
 });
 
 describe('submission tabs', () => {

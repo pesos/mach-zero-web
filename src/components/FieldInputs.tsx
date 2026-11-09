@@ -102,6 +102,7 @@ export function FieldInputs(props: {
           <Textarea
             id={id}
             aria-describedby={helpId}
+            maxLength={5000}
             value={value}
             onChange={(e) => set(e.target.value)}
           />
@@ -112,6 +113,7 @@ export function FieldInputs(props: {
             type={f.type === 'phone' ? 'tel' : f.type === 'datetime' ? 'datetime-local' : 'text'}
             inputMode={f.type === 'number' ? 'decimal' : f.type === 'phone' ? 'tel' : undefined}
             autoComplete={f.type === 'phone' ? 'tel' : undefined}
+            maxLength={f.type === 'short_text' ? 1000 : undefined}
             value={value}
             onChange={(e) => set(e.target.value)}
           />

@@ -57,7 +57,7 @@ export function Layout() {
     );
   }
   if (who.canJudge) sections.push({ to: '/judge', label: 'Judge', icon: GavelIcon });
-  if ((who.kind === 'participant' && activities) || who.canJudge)
+  if ((who.kind === 'participant' && activities) || who.canReview)
     sections.push({ to: '/submissions', label: 'Submissions', icon: FileTextIcon });
   if (who.kind && confirmed) {
     sections.push({ to: '/polls', label: 'Polls', icon: VoteIcon });
